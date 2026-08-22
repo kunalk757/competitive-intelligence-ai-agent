@@ -1,0 +1,33 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Build artifacts
+frontend/.next/
+frontend/out/
+dist/
+build/
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
