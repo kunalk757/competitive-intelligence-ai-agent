@@ -63,6 +63,7 @@ export interface AgentRunResponse {
   steps: StepActivityData[];
   tools_used: string[];
   iterations: number;
+  session_id?: string;
   news_results?: NewsArticleData[];
   companies?: CompanyCardData[];
   news?: NewsArticleData[];
@@ -80,4 +81,6 @@ export interface ChatMessage {
   isLoading?: boolean;
   error?: string;
   timestamp: string;
+  session_id?: string;
 }
+

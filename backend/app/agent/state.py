@@ -112,6 +112,36 @@ class AgentState(BaseModel):
     error: Optional[str] = None
 
 
+class ResearchResults(BaseModel):
+    """Structured output returned by the specialized Research Agent."""
+    research_objective: str
+    company_data: List[CompanyCardData] = Field(default_factory=list)
+    news: List[NewsArticle] = Field(default_factory=list)
+    research: List[ResearchPaper] = Field(default_factory=list)
+    patents: List[PatentItem] = Field(default_factory=list)
+    sources: List[SourceItem] = Field(default_factory=list)
+    summary: str = ""
+    tools_used: List[str] = Field(default_factory=list)
+    steps: List[StepActivity] = Field(default_factory=list)
+    history: List[ToolExecutionRecord] = Field(default_factory=list)
+    success: bool = True
+    error: Optional[str] = None
+
+
+class AnalystReport(BaseModel):
+    """Structured intelligence report returned by the specialized Intelligence Analyst Agent."""
+    executive_overview: str = ""
+    key_findings: List[str] = Field(default_factory=list)
+    competitive_impact: str = ""
+    trends: List[str] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+    sources: List[SourceItem] = Field(default_factory=list)
+    full_markdown_report: str = ""
+    steps: List[StepActivity] = Field(default_factory=list)
+    success: bool = True
+    error: Optional[str] = None
+
+
 class AgentRunRequest(BaseModel):
     """Request model for invoking the agent."""
     goal: str = Field(
@@ -129,6 +159,10 @@ class AgentRunRequest(BaseModel):
         default=None,
         description="Optional prior conversation turns for contextual research follow-ups.",
     )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Unique session/conversation ID for stateful memory management.",
+    )
 
 
 class AgentRunResponse(BaseModel):
@@ -138,6 +172,7 @@ class AgentRunResponse(BaseModel):
     steps: List[StepActivity]
     tools_used: List[str]
     iterations: int
+    session_id: Optional[str] = None
     # Backward compatible field aliases
     news_results: List[NewsArticle] = Field(default_factory=list)
     # Multi-source structured results
@@ -147,3 +182,5 @@ class AgentRunResponse(BaseModel):
     patents: List[PatentItem] = Field(default_factory=list)
     sources: List[SourceItem] = Field(default_factory=list)
     error: Optional[str] = None
+
+

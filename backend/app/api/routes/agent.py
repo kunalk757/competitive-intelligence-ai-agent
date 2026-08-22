@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, status
 from app.agent.state import AgentRunRequest, AgentRunResponse
+from app.agent.orchestrator import default_orchestrator
 from app.agent.agent import default_agent
 
 logger = logging.getLogger("agent_api")
@@ -10,8 +11,8 @@ router = APIRouter(prefix="/agent", tags=["Agent"])
 @router.post(
     "/run",
     response_model=AgentRunResponse,
-    summary="Run Autonomous Competitive Intelligence Agent",
-    description="Execute the ReAct reasoning loop to investigate a user's competitive intelligence goal.",
+    summary="Run Autonomous Multi-Agent Competitive Intelligence",
+    description="Execute the multi-agent orchestrated pipeline (Research Agent -> Intelligence Analyst) to investigate a goal.",
 )
 async def run_agent(request: AgentRunRequest):
     if not request.goal or not request.goal.strip():
@@ -22,14 +23,14 @@ async def run_agent(request: AgentRunRequest):
 
     try:
         logger.info(f"Received agent run request: goal='{request.goal}', max_iterations={request.max_iterations}")
-        response = await default_agent.run(request)
+        response = await default_orchestrator.run(request)
         if not response.success:
-            logger.error(f"Agent execution reported failure: {response.error}")
+            logger.error(f"Multi-agent execution reported failure: {response.error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=response.error or "Agent reasoning loop failed.",
+                detail=response.error or "Multi-agent reasoning loop failed.",
             )
-        logger.info(f"Agent run completed successfully with {len(response.steps)} steps and {len(response.tools_used)} tools.")
+        logger.info(f"Multi-agent run completed successfully with {len(response.steps)} steps and {len(response.tools_used)} tools.")
         return response
     except HTTPException:
         raise
