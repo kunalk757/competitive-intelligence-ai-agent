@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import DashboardView from "@/components/DashboardView";
+import CompaniesView from "@/components/CompaniesView";
 import ResearchModal from "@/components/ResearchModal";
 import { NewsItemData } from "@/components/NewsCard";
 
@@ -12,6 +13,14 @@ interface HealthResponse {
   service: string;
   timestamp: string;
   version: string;
+}
+
+interface NewsApiResponse {
+  articles: NewsItemData[];
+  total_count: number;
+  last_updated?: string | null;
+  schedule_notice?: string;
+  is_supabase_connected?: boolean;
 }
 
 export default function Home() {
@@ -23,8 +32,10 @@ export default function Home() {
     "Analyze the competitive landscape for AI chips."
   );
 
-  // Dynamic news results list (starts clean & empty until populated by real search tools)
+  // Persistent database-backed news articles & sync metadata
   const [latestNews, setLatestNews] = useState<NewsItemData[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isRefreshingNews, setIsRefreshingNews] = useState(false);
 
   // Backend health status
   const [healthStatus, setHealthStatus] = useState<
@@ -35,7 +46,7 @@ export default function Home() {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
-  const checkBackendHealth = async () => {
+  const checkBackendHealth = useCallback(async () => {
     setIsCheckingHealth(true);
     try {
       const res = await fetch(`${backendUrl}/health`, {
@@ -54,11 +65,78 @@ export default function Home() {
     } finally {
       setIsCheckingHealth(false);
     }
+  }, [backendUrl]);
+
+  // Fetch persistent saved news from Backend -> Supabase
+  const loadSavedNews = useCallback(async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/news?limit=25`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const data: NewsApiResponse = await res.json();
+        if (data.articles) {
+          setLatestNews(data.articles);
+        }
+        if (data.last_updated) {
+          setLastUpdated(data.last_updated);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load news from backend:", err);
+    }
+  }, [backendUrl]);
+
+  // Trigger manual news refresh
+  const handleRefreshNews = async () => {
+    setIsRefreshingNews(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/news/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        await loadSavedNews();
+      }
+    } catch (err) {
+      console.error("Error refreshing news:", err);
+    } finally {
+      setIsRefreshingNews(false);
+    }
   };
 
   useEffect(() => {
-    checkBackendHealth();
-  }, []);
+    let isMounted = true;
+
+    fetch(`${backendUrl}/health`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Health check failed");
+        return res.json();
+      })
+      .then((data: HealthResponse) => {
+        if (isMounted) {
+          setHealthStatus(data.status === "healthy" ? "healthy" : "error");
+        }
+      })
+      .catch(() => {
+        if (isMounted) setHealthStatus("error");
+      });
+
+    fetch(`${backendUrl}/api/news?limit=25`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: NewsApiResponse | null) => {
+        if (isMounted && data) {
+          if (data.articles) setLatestNews(data.articles);
+          if (data.last_updated) setLastUpdated(data.last_updated);
+        }
+      })
+      .catch((err) => console.warn("Could not load news from backend:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [backendUrl]);
 
   const openNewResearch = (initialGoal?: string) => {
     if (initialGoal) setModalInitialGoal(initialGoal);
@@ -113,11 +191,18 @@ export default function Home() {
           {activeTab === "dashboard" && (
             <DashboardView
               news={latestNews}
+              lastUpdated={lastUpdated}
+              onRefreshNews={handleRefreshNews}
+              isRefreshing={isRefreshingNews}
               onNewResearchClick={openNewResearch}
             />
           )}
 
-          {activeTab !== "dashboard" && (
+          {activeTab === "companies" && (
+            <CompaniesView />
+          )}
+
+          {activeTab !== "dashboard" && activeTab !== "companies" && (
             <div
               className="dashboard-card"
               style={{ padding: "2.5rem", textAlign: "center" }}

@@ -26,6 +26,10 @@ frontend/out/
 dist/
 build/
 
+# Local cache data
+backend/data/
+data/
+
 # Logs & OS
 *.log
 .DS_Store

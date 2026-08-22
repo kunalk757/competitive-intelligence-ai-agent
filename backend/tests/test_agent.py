@@ -1,6 +1,11 @@
 import asyncio
 import json
+import os
+import sys
 from unittest.mock import AsyncMock
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.agent.state import AgentRunRequest, AgentDecision
 from app.agent.agent import CompetitiveIntelligenceAgent
 from app.agent.tool_registry import ToolRegistry, SearchDemoTool

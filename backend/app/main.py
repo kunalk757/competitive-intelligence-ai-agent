@@ -1,15 +1,28 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.api.routes import api_router
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start the background news scheduler
+    start_scheduler()
+    yield
+    # Shutdown: Stop the scheduler
+    stop_scheduler()
+
 
 app = FastAPI(
     title="Competitive Intelligence AI Agent Backend",
     description="Backend API supporting agentic research and competitive intelligence collection.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS

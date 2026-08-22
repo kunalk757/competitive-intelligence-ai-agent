@@ -21,11 +21,26 @@ interface NewsCardProps {
   item: NewsItemData;
 }
 
+function formatNewsDate(dateStr?: string): string {
+  if (!dateStr) return "Recent";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function NewsCard({ item }: NewsCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const displayTime = item.published_at || item.time || "Recent";
+  const displayTime = formatNewsDate(item.published_at || item.time);
   const displayCompany = item.company_tag || item.companyTag;
   const displayCategory = item.category || "News";
 
