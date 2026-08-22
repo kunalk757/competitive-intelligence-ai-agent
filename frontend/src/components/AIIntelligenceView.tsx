@@ -67,6 +67,11 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
   const [expandedActivities, setExpandedActivities] = useState<{ [msgId: string]: boolean }>({});
   const [activeSourceModal, setActiveSourceModal] = useState<ActiveSourceDetail | null>(null);
   const [sessionId, setSessionId] = useState<string>(() => `session-${Math.random().toString(36).substring(2, 11)}`);
+  
+  // Developer / Adversarial Test Mode State (Hackathon Live Demonstration)
+  const [devModeOpen, setDevModeOpen] = useState(false);
+  const [devModeActive, setDevModeActive] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<"tavily_fail" | "gnews_fail" | "repeated_fail" | "conflict_evidence">("tavily_fail");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -153,6 +158,30 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
           content: m.role === "user" ? m.queryText || "" : m.response?.answer || "",
         }));
 
+      // Construct adversarial configuration if developer test mode is enabled
+      let adversarialConfig: Record<string, any> | undefined = undefined;
+      if (devModeActive) {
+        if (selectedScenario === "tavily_fail") {
+          adversarialConfig = { force_tavily_fail: true };
+        } else if (selectedScenario === "gnews_fail") {
+          adversarialConfig = { force_gnews_fail: true };
+        } else if (selectedScenario === "repeated_fail") {
+          adversarialConfig = { force_repeated_tool_fail: "search_news" };
+        } else if (selectedScenario === "conflict_evidence") {
+          adversarialConfig = {
+            inject_conflicting_evidence: {
+              topic: "H100 vs MI300X Memory Bandwidth and Specs",
+              claim_a: "Initial preliminary leak claimed MI300X memory bandwidth falls below 4 TB/s.",
+              source_a: "Tech Blog Rumors",
+              date_a: "2023-11-01",
+              claim_b: "Official MLPerf and IEEE architectural benchmarks verified MI300X delivers 5.3 TB/s bandwidth and matches H100 in FP8 throughput.",
+              source_b: "IEEE Micro & MLPerf Verified Benchmark",
+              date_b: "2024-06-15",
+            },
+          };
+        }
+      }
+
       setMessages((prev) => [...prev, newUserMsg, newAssistantMsg]);
       setInputValue("");
       setIsSubmitting(true);
@@ -161,7 +190,9 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
       activeAbortControllerRef.current = controller;
 
       try {
-        console.debug(`[AIIntelligence] Invoking multi-agent flow: "${q}" (session: ${sessionId})`);
+        console.debug(`[AIIntelligence] Invoking multi-agent flow: "${q}" (session: ${sessionId})`, {
+          adversarialConfig,
+        });
         const res = await fetch(`${backendUrl}/agent/run`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -170,6 +201,7 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
             max_iterations: 5,
             chat_history: historyContext,
             session_id: sessionId,
+            ...(adversarialConfig ? { adversarial_config: adversarialConfig } : {}),
           }),
           signal: controller.signal,
         });
@@ -242,7 +274,7 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
         setIsSubmitting(false);
       }
     },
-    [inputValue, isSubmitting, messages, backendUrl, sessionId]
+    [inputValue, isSubmitting, messages, backendUrl, sessionId, devModeActive, selectedScenario]
   );
 
   return (
@@ -254,25 +286,136 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
           <div>
             <h1 className="chat-title">AI Intelligence</h1>
             <p className="chat-status-text">
-              <span className="online-pulse-dot" /> Autonomous Multi-Agent Research Assistant
+              <span className="online-pulse-dot" /> Autonomous Multi-Agent Research Assistant (LangGraph Engine)
             </p>
           </div>
         </div>
 
-        {messages.length > 0 && (
+        <div className="chat-top-actions">
           <button
             type="button"
-            className="btn-new-research-thread"
-            onClick={handleStartNewResearch}
-            title="Start new research thread"
+            className={`btn-dev-test-mode ${devModeActive ? "active" : ""}`}
+            onClick={() => setDevModeOpen(!devModeOpen)}
+            title="Toggle Developer / Adversarial Test Mode panel"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>New Research</span>
+            <span>🛠️ Dev Test Mode</span>
+            {devModeActive && <span className="dev-active-badge">ACTIVE</span>}
           </button>
-        )}
+
+          {messages.length > 0 && (
+            <button
+              type="button"
+              className="btn-new-research-thread"
+              onClick={handleStartNewResearch}
+              title="Start new research thread"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>New Research</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Developer / Adversarial Test Mode Panel */}
+      {devModeOpen && (
+        <div className="dev-mode-panel">
+          <div className="dev-mode-header">
+            <div className="dev-mode-title-wrap">
+              <span className="dev-mode-tag">DEVELOPER TEST MODE</span>
+              <h4 className="dev-mode-heading">Adversarial Failure & Conflict Simulation</h4>
+            </div>
+            <div className="dev-mode-master-toggle">
+              <label className="switch-label">
+                <input
+                  type="checkbox"
+                  checked={devModeActive}
+                  onChange={(e) => setDevModeActive(e.target.checked)}
+                />
+                <span className="switch-slider" />
+                <span className="switch-text">{devModeActive ? "Simulation Enabled" : "Disabled (Production Mode)"}</span>
+              </label>
+            </div>
+          </div>
+
+          <p className="dev-mode-desc">
+            Select a controlled fault condition to test LangGraph’s autonomous recovery loops, tool fallback routing, hypothesis verification, and circuit breaker logic without impacting real production APIs.
+          </p>
+
+          <div className={`dev-scenario-grid ${!devModeActive ? "disabled" : ""}`}>
+            {/* Scenario 1: Tavily Failure */}
+            <div
+              className={`dev-scenario-card ${selectedScenario === "tavily_fail" ? "selected" : ""}`}
+              onClick={() => devModeActive && setSelectedScenario("tavily_fail")}
+            >
+              <div className="scenario-card-header">
+                <span className="scenario-icon">⚡</span>
+                <span className="scenario-name">1. Tavily Search Failure</span>
+              </div>
+              <p className="scenario-detail">
+                Simulates 503 outage on primary web search. Tests: Failure detection $\rightarrow$ Autonomous Replanning $\rightarrow$ GNews & Company Intelligence fallback.
+              </p>
+              <div className="scenario-config-tag">force_tavily_fail: true</div>
+            </div>
+
+            {/* Scenario 2: GNews Failure */}
+            <div
+              className={`dev-scenario-card ${selectedScenario === "gnews_fail" ? "selected" : ""}`}
+              onClick={() => devModeActive && setSelectedScenario("gnews_fail")}
+            >
+              <div className="scenario-card-header">
+                <span className="scenario-icon">📰</span>
+                <span className="scenario-name">2. GNews API Failure</span>
+              </div>
+              <p className="scenario-detail">
+                Simulates 429 rate limit on news feeds. Tests: Tool fallback to live web search without crashing the multi-agent investigation.
+              </p>
+              <div className="scenario-config-tag">force_gnews_fail: true</div>
+            </div>
+
+            {/* Scenario 3: Repeated Tool Failure */}
+            <div
+              className={`dev-scenario-card ${selectedScenario === "repeated_fail" ? "selected" : ""}`}
+              onClick={() => devModeActive && setSelectedScenario("repeated_fail")}
+            >
+              <div className="scenario-card-header">
+                <span className="scenario-icon">🔁</span>
+                <span className="scenario-name">3. Repeated Failure & Deadlock</span>
+              </div>
+              <p className="scenario-detail">
+                Simulates persistent tool failures. Tests: State action counters, Circuit Breaker trigger, and safe termination within resource limits.
+              </p>
+              <div className="scenario-config-tag">force_repeated_tool_fail: "search_news"</div>
+            </div>
+
+            {/* Scenario 4: Conflicting Evidence */}
+            <div
+              className={`dev-scenario-card ${selectedScenario === "conflict_evidence" ? "selected" : ""}`}
+              onClick={() => devModeActive && setSelectedScenario("conflict_evidence")}
+            >
+              <div className="scenario-card-header">
+                <span className="scenario-icon">⚖️</span>
+                <span className="scenario-name">4. Conflicting Evidence Injection</span>
+              </div>
+              <p className="scenario-detail">
+                Injects contradictory claims (Source A vs Source B). Tests: Source recency & reliability weighting, uncertainty rating, and transparent disclosure.
+              </p>
+              <div className="scenario-config-tag">inject_conflicting_evidence: &#123;...&#125;</div>
+            </div>
+          </div>
+
+          {devModeActive && (
+            <div className="dev-active-status-bar">
+              <span className="status-indicator-dot" />
+              <span>
+                Active Simulation: <strong>{selectedScenario.toUpperCase()}</strong>. Next query will dispatch with LangGraph adversarial payload.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Main Conversation Stream */}
       <div className="chat-stream-container">
@@ -351,7 +494,7 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
                       {/* 3. Completed Response */}
                       {msg.response && (
                         <div className="assistant-response-body">
-                          {/* Compact Expandable Agent Activity Area */}
+                          {/* Agent Activity Log Area (LangGraph Workflow Execution) */}
                           {msg.response.steps && msg.response.steps.length > 0 && (
                             <div className="chat-activity-bar">
                               <button
@@ -360,30 +503,44 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
                                 onClick={() => toggleActivity(msg.id)}
                               >
                                 <div className="activity-toggle-left">
-                                  <span className="activity-success-dot">✓</span>
+                                  <span className="activity-success-dot">⚡</span>
                                   <span className="activity-toggle-text">
-                                    Investigation completed ({msg.response.tools_used.length} tool(s), {msg.response.steps.length} collaborative steps)
+                                    Agent Activity Log ({msg.response.steps.length} LangGraph workflow events)
                                   </span>
                                 </div>
                                 <span className="activity-toggle-arrow">
-                                  {expandedActivities[msg.id] ? "▲ Hide Steps" : "▼ View Activity"}
+                                  {expandedActivities[msg.id] !== false ? "▲ Hide Log" : "▼ View Activity Log"}
                                 </span>
                               </button>
 
-                              {expandedActivities[msg.id] && (
+                              {expandedActivities[msg.id] !== false && (
                                 <ul className="chat-activity-steps">
-                                  {msg.response.steps.map((step, sIdx) => (
-                                    <li key={sIdx} className={`chat-step-item ${step.status}`}>
-                                      <span className="step-bullet">
-                                        {step.status === "completed" ? "✓" : step.status === "failed" ? "✕" : "•"}
-                                      </span>
-                                      <span className="step-text">{step.summary}</span>
-                                    </li>
-                                  ))}
+                                  {msg.response.steps.map((step, sIdx) => {
+                                    let icon = "✓";
+                                    let itemClass = "chat-step-item completed";
+                                    const text = step.summary;
+                                    if (step.status === "failed" || step.action === "error" || text.includes("⚠") || text.toLowerCase().includes("failed")) {
+                                      icon = "⚠";
+                                      itemClass = "chat-step-item failed";
+                                    } else if (text.includes("↻") || text.toLowerCase().includes("replan")) {
+                                      icon = "↻";
+                                      itemClass = "chat-step-item replan";
+                                    } else if (step.status === "running") {
+                                      icon = "•";
+                                      itemClass = "chat-step-item running";
+                                    }
+                                    return (
+                                      <li key={sIdx} className={itemClass}>
+                                        <span className="step-bullet">{icon}</span>
+                                        <span className="step-text">{text}</span>
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               )}
                             </div>
                           )}
+
 
                           {/* Synthesized Analysis / Intelligence Report */}
                           {msg.response.answer && (

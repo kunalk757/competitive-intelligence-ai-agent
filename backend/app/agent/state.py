@@ -155,6 +155,12 @@ class AgentRunRequest(BaseModel):
         le=10,
         description="Maximum reasoning iterations allowed before forcing synthesis.",
     )
+    max_tool_calls: Optional[int] = Field(
+        default=8,
+        ge=1,
+        le=20,
+        description="Maximum tool calls allowed across the investigation graph.",
+    )
     chat_history: Optional[List[Dict[str, str]]] = Field(
         default=None,
         description="Optional prior conversation turns for contextual research follow-ups.",
@@ -162,6 +168,10 @@ class AgentRunRequest(BaseModel):
     session_id: Optional[str] = Field(
         default=None,
         description="Unique session/conversation ID for stateful memory management.",
+    )
+    adversarial_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional test-mode configuration for simulating tool failures or conflicting evidence.",
     )
 
 
@@ -181,6 +191,10 @@ class AgentRunResponse(BaseModel):
     research: List[ResearchPaper] = Field(default_factory=list)
     patents: List[PatentItem] = Field(default_factory=list)
     sources: List[SourceItem] = Field(default_factory=list)
+    confidence: Optional[str] = "high"
+    hypotheses: List[Dict[str, Any]] = Field(default_factory=list)
+    conflicting_evidence: List[Dict[str, Any]] = Field(default_factory=list)
     error: Optional[str] = None
+
 
 
