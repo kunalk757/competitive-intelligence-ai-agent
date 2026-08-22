@@ -1,7 +1,9 @@
+import logging
 from fastapi import APIRouter, HTTPException, status
 from app.agent.state import AgentRunRequest, AgentRunResponse
 from app.agent.agent import default_agent
 
+logger = logging.getLogger("agent_api")
 router = APIRouter(prefix="/agent", tags=["Agent"])
 
 
@@ -19,17 +21,22 @@ async def run_agent(request: AgentRunRequest):
         )
 
     try:
+        logger.info(f"Received agent run request: goal='{request.goal}', max_iterations={request.max_iterations}")
         response = await default_agent.run(request)
         if not response.success:
+            logger.error(f"Agent execution reported failure: {response.error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=response.error or "Agent reasoning loop failed.",
             )
+        logger.info(f"Agent run completed successfully with {len(response.steps)} steps and {len(response.tools_used)} tools.")
         return response
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception(f"Unhandled backend exception during agent run: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Agent execution error: {str(e)}",
         )
+

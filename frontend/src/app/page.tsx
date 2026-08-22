@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import AIIntelligenceView from "@/components/AIIntelligenceView";
 import DashboardView from "@/components/DashboardView";
 import CompaniesView from "@/components/CompaniesView";
 import ResearchModal from "@/components/ResearchModal";
@@ -24,7 +25,7 @@ interface NewsApiResponse {
 }
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("intelligence");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isResearchModalOpen, setIsResearchModalOpen] = useState(false);
@@ -186,8 +187,16 @@ export default function Home() {
           onNewResearchClick={() => openNewResearch()}
         />
 
-        {/* Dashboard Content */}
+        {/* Dashboard / Intelligence Content */}
         <main className="content-area">
+          {activeTab === "intelligence" && (
+            <AIIntelligenceView
+              onNavigateToCompany={() => {
+                setActiveTab("companies");
+              }}
+            />
+          )}
+
           {activeTab === "dashboard" && (
             <DashboardView
               news={latestNews}
@@ -202,7 +211,7 @@ export default function Home() {
             <CompaniesView />
           )}
 
-          {activeTab !== "dashboard" && activeTab !== "companies" && (
+          {activeTab !== "intelligence" && activeTab !== "dashboard" && activeTab !== "companies" && (
             <div
               className="dashboard-card"
               style={{ padding: "2.5rem", textAlign: "center" }}

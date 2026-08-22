@@ -66,7 +66,10 @@ class GNewsService:
         pass
 
     def get_api_key(self) -> str:
-        """Dynamically retrieve GNEWS_API_KEY from environment."""
+        """Dynamically retrieve GNEWS_API_KEY from environment or instance."""
+        inst_key = getattr(self, "api_key", None)
+        if inst_key:
+            return inst_key.strip()
         load_dotenv(override=True)
         return os.getenv("GNEWS_API_KEY", "").strip()
 

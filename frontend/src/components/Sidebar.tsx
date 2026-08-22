@@ -21,6 +21,18 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    id: "intelligence",
+    label: "🤖 AI Intelligence",
+    icon: () => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4 4 4 0 0 1-4-4V6a4 4 0 0 1 4-4Z" />
+        <path d="M18 14v1a6 6 0 0 1-12 0v-1" />
+        <line x1="12" y1="21" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    ),
+  },
+  {
     id: "dashboard",
     label: "Dashboard",
     icon: () => (

@@ -21,7 +21,10 @@ class TavilyService:
         pass
 
     def get_api_key(self) -> str:
-        """Dynamically retrieve TAVILY_API_KEY from environment."""
+        """Dynamically retrieve TAVILY_API_KEY from environment or instance."""
+        inst_key = getattr(self, "api_key", None)
+        if inst_key:
+            return inst_key.strip()
         load_dotenv(override=True)
         return os.getenv("TAVILY_API_KEY", "").strip()
 
@@ -127,5 +130,52 @@ class TavilyService:
             logger.error(f"Error calling Tavily API for {clean_name}: {e}", exc_info=True)
             return None
 
+    async def search(
+        self, query: str, max_results: int = 5, include_answer: bool = True
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Execute a general search query on Tavily.
+        Returns dict containing 'answer', 'results' (with title, url, content), or None.
+        """
+        clean_query = query.strip()
+        if not clean_query:
+            return None
+
+        if not self.is_configured():
+            logger.warning(
+                f"TAVILY_API_KEY is not configured. Skipping Tavily search for '{clean_query}'."
+            )
+            return None
+
+        api_key = self.get_api_key()
+        payload = {
+            "api_key": api_key,
+            "query": clean_query,
+            "search_depth": "basic",
+            "include_answer": include_answer,
+            "max_results": max(1, min(max_results, 10)),
+        }
+
+        try:
+            logger.info(f"Calling Tavily Search API: '{clean_query}'")
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(self.BASE_URL, json=payload)
+                if response.status_code != 200:
+                    logger.error(
+                        f"Tavily Search API returned {response.status_code}: {response.text}"
+                    )
+                    return None
+
+                data = response.json()
+                return {
+                    "query": clean_query,
+                    "answer": data.get("answer") or "",
+                    "results": data.get("results") or [],
+                }
+        except Exception as e:
+            logger.error(f"Error during Tavily search for '{clean_query}': {e}", exc_info=True)
+            return None
+
 
 tavily_service = TavilyService()
+

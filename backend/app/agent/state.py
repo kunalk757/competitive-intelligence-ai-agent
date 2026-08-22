@@ -17,6 +17,47 @@ class NewsArticle(BaseModel):
     company_tag: Optional[str] = None
 
 
+class CompanyCardData(BaseModel):
+    """Structured model for company profiles retrieved during research."""
+    id: Optional[str] = None
+    name: str
+    ticker: Optional[str] = None
+    industry: Optional[str] = None
+    overview: Optional[str] = None
+    description: Optional[str] = None
+    website: Optional[str] = None
+    logo_url: Optional[str] = None
+    sources: List[Dict[str, str]] = Field(default_factory=list)
+
+
+class ResearchPaper(BaseModel):
+    """Structured model for academic and frontier research papers."""
+    title: str
+    authors: Optional[str] = None
+    published_date: Optional[str] = None
+    source: Optional[str] = None
+    abstract: Optional[str] = None
+    url: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class PatentItem(BaseModel):
+    """Structured model for patent documents (when available)."""
+    patent_number: str
+    title: str
+    assignee: Optional[str] = None
+    filing_date: Optional[str] = None
+    abstract: Optional[str] = None
+    url: Optional[str] = None
+
+
+class SourceItem(BaseModel):
+    """Structured model for verified external citation sources."""
+    title: str
+    url: str
+    snippet: Optional[str] = None
+
+
 class StepActivity(BaseModel):
     """Safe high-level summary of an action taken in an agent step."""
     step: int
@@ -38,6 +79,10 @@ class ToolExecutionRecord(BaseModel):
     success: bool = True
     error: Optional[str] = None
     extracted_news: List[NewsArticle] = Field(default_factory=list)
+    extracted_companies: List[CompanyCardData] = Field(default_factory=list)
+    extracted_research: List[ResearchPaper] = Field(default_factory=list)
+    extracted_patents: List[PatentItem] = Field(default_factory=list)
+    extracted_sources: List[SourceItem] = Field(default_factory=list)
 
 
 class AgentDecision(BaseModel):
@@ -59,6 +104,10 @@ class AgentState(BaseModel):
     history: List[ToolExecutionRecord] = Field(default_factory=list)
     steps: List[StepActivity] = Field(default_factory=list)
     collected_news: List[NewsArticle] = Field(default_factory=list)
+    collected_companies: List[CompanyCardData] = Field(default_factory=list)
+    collected_research: List[ResearchPaper] = Field(default_factory=list)
+    collected_patents: List[PatentItem] = Field(default_factory=list)
+    collected_sources: List[SourceItem] = Field(default_factory=list)
     final_answer: Optional[str] = None
     error: Optional[str] = None
 
@@ -76,6 +125,10 @@ class AgentRunRequest(BaseModel):
         le=10,
         description="Maximum reasoning iterations allowed before forcing synthesis.",
     )
+    chat_history: Optional[List[Dict[str, str]]] = Field(
+        default=None,
+        description="Optional prior conversation turns for contextual research follow-ups.",
+    )
 
 
 class AgentRunResponse(BaseModel):
@@ -85,5 +138,12 @@ class AgentRunResponse(BaseModel):
     steps: List[StepActivity]
     tools_used: List[str]
     iterations: int
+    # Backward compatible field aliases
     news_results: List[NewsArticle] = Field(default_factory=list)
+    # Multi-source structured results
+    companies: List[CompanyCardData] = Field(default_factory=list)
+    news: List[NewsArticle] = Field(default_factory=list)
+    research: List[ResearchPaper] = Field(default_factory=list)
+    patents: List[PatentItem] = Field(default_factory=list)
+    sources: List[SourceItem] = Field(default_factory=list)
     error: Optional[str] = None

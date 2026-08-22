@@ -39,6 +39,16 @@ class CompetitiveIntelligenceAgent:
             )
         return "\n".join(blocks)
 
+    def _format_chat_context(self, chat_history: Optional[list]) -> Optional[str]:
+        if not chat_history:
+            return None
+        lines = []
+        for msg in chat_history[-6:]:  # Keep recent context
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            lines.append(f"{role}: {content}")
+        return "\n".join(lines)
+
     async def run(self, request: AgentRunRequest) -> AgentRunResponse:
         """
         Execute the autonomous ReAct reasoning loop.
@@ -47,6 +57,8 @@ class CompetitiveIntelligenceAgent:
             goal=request.goal.strip(),
             max_iterations=request.max_iterations or 5,
         )
+
+        chat_context = self._format_chat_context(request.chat_history)
 
         state.steps.append(
             StepActivity(
@@ -71,6 +83,7 @@ class CompetitiveIntelligenceAgent:
                     history_text=history_text,
                     current_step=step_num,
                     max_steps=state.max_iterations,
+                    chat_context=chat_context,
                 )
 
                 # 2. If decision is FINAL answer
@@ -88,7 +101,7 @@ class CompetitiveIntelligenceAgent:
                     break
 
                 # 3. If decision is TOOL call
-                tool_name = decision.tool_name or "search_demo"
+                tool_name = decision.tool_name or "search_web"
                 tool_input = decision.tool_input or {}
                 tool = self.tool_registry.get_tool(tool_name)
 
@@ -119,13 +132,14 @@ class CompetitiveIntelligenceAgent:
                 if tool_name not in state.tools_used:
                     state.tools_used.append(tool_name)
 
-                # Safe activity log: tool selected
+                # Clean summary for user activity log
+                step_summary = decision.thought_summary or f"Executing '{tool_name}'"
                 state.steps.append(
                     StepActivity(
                         step=step_num,
                         action="tool",
                         tool=tool_name,
-                        summary=f"Selected tool '{tool_name}' with parameters: {json.dumps(tool_input)}",
+                        summary=step_summary,
                         status="completed",
                     )
                 )
@@ -133,9 +147,24 @@ class CompetitiveIntelligenceAgent:
                 # Execute tool
                 try:
                     observation = await tool.execute(**tool_input)
+                    
+                    # Extract structured multi-source entities
                     extracted_news = tool.extract_news(observation)
+                    extracted_companies = tool.extract_companies(observation)
+                    extracted_research = tool.extract_research(observation)
+                    extracted_patents = tool.extract_patents(observation)
+                    extracted_sources = tool.extract_sources(observation)
+
                     if extracted_news:
                         state.collected_news.extend(extracted_news)
+                    if extracted_companies:
+                        state.collected_companies.extend(extracted_companies)
+                    if extracted_research:
+                        state.collected_research.extend(extracted_research)
+                    if extracted_patents:
+                        state.collected_patents.extend(extracted_patents)
+                    if extracted_sources:
+                        state.collected_sources.extend(extracted_sources)
 
                     state.history.append(
                         ToolExecutionRecord(
@@ -145,15 +174,10 @@ class CompetitiveIntelligenceAgent:
                             observation=observation,
                             success=True,
                             extracted_news=extracted_news,
-                        )
-                    )
-                    state.steps.append(
-                        StepActivity(
-                            step=step_num,
-                            action="tool",
-                            tool=tool_name,
-                            summary=f"Tool '{tool_name}' executed. Observation received.",
-                            status="completed",
+                            extracted_companies=extracted_companies,
+                            extracted_research=extracted_research,
+                            extracted_patents=extracted_patents,
+                            extracted_sources=extracted_sources,
                         )
                     )
                 except Exception as tool_err:
@@ -173,7 +197,7 @@ class CompetitiveIntelligenceAgent:
                             step=step_num,
                             action="error",
                             tool=tool_name,
-                            summary=f"Error executing tool '{tool_name}'. Proceeding to next step.",
+                            summary=f"Error executing '{tool_name}'. Proceeding to next step.",
                             status="failed",
                         )
                     )
@@ -192,8 +216,41 @@ class CompetitiveIntelligenceAgent:
                 state.final_answer = await self.reasoning.synthesize_final_report(
                     goal=state.goal,
                     history_text=history_text,
+                    chat_context=chat_context,
                 )
                 state.is_completed = True
+
+            # Deduplicate items by URL or name
+            unique_companies = []
+            seen_comp_names = set()
+            for c in state.collected_companies:
+                norm_c = c.name.lower()
+                if norm_c not in seen_comp_names:
+                    seen_comp_names.add(norm_c)
+                    unique_companies.append(c)
+
+            unique_news = []
+            seen_news_urls = set()
+            for n in state.collected_news:
+                key = n.url or n.title
+                if key not in seen_news_urls:
+                    seen_news_urls.add(key)
+                    unique_news.append(n)
+
+            unique_research = []
+            seen_research_urls = set()
+            for r in state.collected_research:
+                key = r.url or r.title
+                if key not in seen_research_urls:
+                    seen_research_urls.add(key)
+                    unique_research.append(r)
+
+            unique_sources = []
+            seen_sources = set()
+            for s in state.collected_sources:
+                if s.url and s.url not in seen_sources:
+                    seen_sources.add(s.url)
+                    unique_sources.append(s)
 
             return AgentRunResponse(
                 success=True,
@@ -201,7 +258,12 @@ class CompetitiveIntelligenceAgent:
                 steps=state.steps,
                 tools_used=state.tools_used,
                 iterations=state.current_iteration,
-                news_results=state.collected_news,
+                news_results=unique_news,
+                companies=unique_companies,
+                news=unique_news,
+                research=unique_research,
+                patents=state.collected_patents,
+                sources=unique_sources,
             )
 
         except Exception as e:
@@ -213,6 +275,11 @@ class CompetitiveIntelligenceAgent:
                 tools_used=state.tools_used,
                 iterations=state.current_iteration,
                 news_results=state.collected_news,
+                companies=state.collected_companies,
+                news=state.collected_news,
+                research=state.collected_research,
+                patents=state.collected_patents,
+                sources=state.collected_sources,
                 error=str(e),
             )
 

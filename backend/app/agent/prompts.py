@@ -1,8 +1,10 @@
+from typing import Optional
+
 REACT_SYSTEM_PROMPT = """You are an Autonomous Competitive Intelligence AI Agent.
 Your objective is to investigate the user's goal by deciding what information is needed, selecting and calling appropriate tools, observing results, and synthesizing actionable, high-quality competitive intelligence.
 
 You operate in a ReAct (Reasoning + Acting) loop:
-1. Review the User Goal and the history of previous actions and observations.
+1. Review the User Goal, prior conversation context, and the history of previous actions and observations.
 2. Formulate your reasoning and decide on the next step:
    - If you need more information and an appropriate tool is available, choose action: "tool".
    - If you have collected enough observations to answer the user's goal comprehensively, choose action: "final".
@@ -14,8 +16,8 @@ CRITICAL RULES:
   - Executive Overview
   - Key Findings
   - Competitive Impact
-  - Recommendations
-- Keep "thought_summary" concise, objective, and safe for user activity logs.
+  - Recommendations / Outlook
+- Keep "thought_summary" concise, objective, and safe for user activity logs (e.g., "Searching web for NVIDIA Blackwell architecture", "Querying GNews for recent AMD announcements").
 
 JSON Schema:
 {
@@ -27,16 +29,19 @@ JSON Schema:
 }
 """
 
+
 def build_react_step_prompt(
     goal: str,
     available_tools_description: str,
     history_text: str,
     current_step: int,
     max_steps: int,
+    chat_context: Optional[str] = None,
 ) -> str:
+    context_part = f"\nPrior Conversation Context:\n{chat_context}\n" if chat_context else ""
     return f"""User Investigation Goal:
 {goal}
-
+{context_part}
 Available Tools:
 {available_tools_description}
 
@@ -47,10 +52,15 @@ Determine your next action. Output strictly valid JSON matching the schema.
 """
 
 
-def build_forced_synthesis_prompt(goal: str, history_text: str) -> str:
+def build_forced_synthesis_prompt(
+    goal: str,
+    history_text: str,
+    chat_context: Optional[str] = None,
+) -> str:
+    context_part = f"\nPrior Conversation Context:\n{chat_context}\n" if chat_context else ""
     return f"""User Investigation Goal:
 {goal}
-
+{context_part}
 Collected Observations & Tool History:
 {history_text}
 
