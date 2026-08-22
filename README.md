@@ -1,69 +1,91 @@
-# Competitive Intelligence AI Agent
+# 🤖 Competitive Intelligence AI Agent
 
-An autonomous AI-powered Competitive Intelligence Agent that collects relevant information across web, industry news, academic research, and patent databases, reasons via a ReAct loop, and delivers structured, decision-grade intelligence reports.
-
-## Project Structure
-
-```
-competitive-intelligence-agent/
-├── frontend/          # Next.js (React + TypeScript) user dashboard
-└── backend/           # FastAPI (Python 3.11+) backend service
-```
+An AI-powered autonomous research agent that continuously investigates companies, technologies, competitors, research developments, patents, and industry news to generate concise and actionable competitive intelligence.
 
 ---
 
-## Getting Started
+## 👥 Team Members
 
-### 1. Backend Setup
-
-```bash
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-# macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-cp .env.example .env
-
-# Run FastAPI server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-- API Health Check: `http://localhost:8000/health`
-- Interactive API Docs: `http://localhost:8000/docs`
+| Name | Role |
+|---|---|
+| Shruti Mandhane | Team Member |
+| Shreya Karhekar | Team Member |
+| Rohit Vinchu | Backend / AI Agent |
+| Kunal Kasar | Frontend |
 
 ---
 
-### 2. Frontend Setup
+# 📌 Problem Statement
 
-```bash
-cd frontend
+Organizations, startups, and research institutions operate in highly competitive and rapidly evolving environments.
 
-# Install dependencies
-npm install
+Keeping track of:
 
-# Configure environment variables
-cp .env.example .env.local
+- Competitor activities
+- Industry news
+- Scientific research
+- Patent developments
+- Technology trends
 
-# Run Next.js development server
-npm run dev
-```
-- Web Application: `http://localhost:3000`
+requires continuously monitoring multiple information sources.
+
+Manual monitoring is:
+
+- Time-consuming
+- Difficult to scale
+- Prone to missing important updates
+- Difficult to analyze across multiple sources
+
+This can result in missed opportunities, delayed innovation, and weaker competitive positioning.
+
+Therefore, there is a need for an autonomous AI agent that can research multiple sources, analyze the information, and generate concise, actionable competitive intelligence.
 
 ---
 
-## Initial MVP Verification
+# 💡 Our Solution
 
-1. Start the backend (`http://localhost:8000`).
-2. Start the frontend (`http://localhost:3000`).
-3. Open `http://localhost:3000` in your browser.
-4. Verify the **Backend: Online** status badge and response payload.
+## Competitive Intelligence AI Agent
 
+Our project is an autonomous AI-powered research platform.
+
+A user provides a:
+
+- Company
+- Competitor
+- Technology
+- Product
+- Research topic
+- Business objective
+
+The AI agent determines what information is required, selects appropriate tools, collects information, observes the results, and continues investigating until enough information has been gathered.
+
+The collected information is then analyzed by AI and converted into a structured intelligence report.
+
+---
+
+# 🤖 Agentic Workflow
+
+The core of our system follows a ReAct-style agentic workflow.
+
+```text
+User Goal
+    ↓
+AI Agent
+    ↓
+Reason / Decide Next Action
+    ↓
+Select Tool
+    ↓
+Execute Tool
+    ↓
+Observe Result
+    ↓
+Decide Whether More Information Is Required
+    ↓
+Additional Tool Call
+    ↓
+Observation
+    ↓
+AI Analysis
+    ↓
+Final Intelligence Report
