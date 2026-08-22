@@ -6,12 +6,15 @@ from unittest.mock import AsyncMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import pytest
+
 from app.agent.state import AgentRunRequest, AgentDecision
 from app.agent.agent import CompetitiveIntelligenceAgent
 from app.agent.tool_registry import ToolRegistry, SearchDemoTool
 from app.agent.reasoning import ReasoningEngine
 
 
+@pytest.mark.asyncio
 async def test_react_loop_orchestration():
     print("\n--- Test 1: Full ReAct Loop (Tool -> Observation -> Final) ---")
     
@@ -57,6 +60,7 @@ async def test_react_loop_orchestration():
     print(">>> Test 1 Passed!\n")
 
 
+@pytest.mark.asyncio
 async def test_max_iteration_limit():
     print("--- Test 2: Max Iteration Limit Synthesis ---")
     registry = ToolRegistry()
@@ -86,6 +90,7 @@ async def test_max_iteration_limit():
     print(">>> Test 2 Passed!\n")
 
 
+@pytest.mark.asyncio
 async def test_tool_failure_graceful_recovery():
     print("--- Test 3: Unregistered Tool Recovery ---")
     registry = ToolRegistry()

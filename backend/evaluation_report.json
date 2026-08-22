@@ -1,0 +1,760 @@
+{
+  "timestamp": "2026-08-22T20:04:51.450495+00:00",
+  "framework_evaluated": "LangGraph Dynamic Multi-Agent Framework",
+  "baseline_evaluated": "Fixed Single-Shot Pipeline",
+  "agent_summary": {
+    "total_test_cases": 11,
+    "passed_test_cases": 11,
+    "failed_test_cases": 0,
+    "pass_rate": 1.0,
+    "average_accuracy_score": 0.778,
+    "average_task_completion": 0.947,
+    "average_groundedness": 0.666,
+    "average_hallucination_rate": 0.334,
+    "recovery_rate": 1.0,
+    "consistency_score": 1.0,
+    "average_latency_seconds": 0.02,
+    "min_latency_seconds": 0.01,
+    "max_latency_seconds": 0.03,
+    "average_tool_calls": 2.91,
+    "average_iterations": 1.55,
+    "category_breakdown": {
+      "normal": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 0.917,
+        "average_groundedness": 0.688,
+        "average_latency_seconds": 0.02
+      },
+      "comparison": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.696,
+        "average_latency_seconds": 0.02
+      },
+      "ambiguous": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.688,
+        "average_latency_seconds": 0.01
+      },
+      "adversarial": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.786,
+        "average_latency_seconds": 0.01
+      },
+      "contradictory": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.72,
+        "average_latency_seconds": 0.02
+      },
+      "incomplete": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.812,
+        "average_latency_seconds": 0.01
+      },
+      "tool_failure": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate": 1.0,
+        "average_completion": 0.75,
+        "average_groundedness": 0.425,
+        "average_latency_seconds": 0.03
+      },
+      "repeated": {
+        "total": 3,
+        "passed": 3,
+        "pass_rate": 1.0,
+        "average_completion": 1.0,
+        "average_groundedness": 0.696,
+        "average_latency_seconds": 0.02
+      }
+    }
+  },
+  "baseline_summary": {
+    "total_test_cases": 9,
+    "passed_test_cases": 1,
+    "failed_test_cases": 8,
+    "pass_rate": 0.111,
+    "average_accuracy_score": 0.089,
+    "average_task_completion": 0.565,
+    "average_groundedness": 0.222,
+    "average_hallucination_rate": 0.778,
+    "recovery_rate": 0.5,
+    "consistency_score": 0.7,
+    "average_latency_seconds": 0.0,
+    "min_latency_seconds": 0.0,
+    "max_latency_seconds": 0.0,
+    "average_tool_calls": 1.0,
+    "average_iterations": 1.0,
+    "category_breakdown": {
+      "normal": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.667,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      },
+      "comparison": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.75,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      },
+      "ambiguous": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.5,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      },
+      "adversarial": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.667,
+        "average_groundedness": 1.0,
+        "average_latency_seconds": 0.0
+      },
+      "contradictory": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.667,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      },
+      "incomplete": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.667,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      },
+      "tool_failure": {
+        "total": 2,
+        "passed": 1,
+        "pass_rate": 0.5,
+        "average_completion": 0.25,
+        "average_groundedness": 0.5,
+        "average_latency_seconds": 0.0
+      },
+      "repeated": {
+        "total": 1,
+        "passed": 0,
+        "pass_rate": 0.0,
+        "average_completion": 0.667,
+        "average_groundedness": 0.0,
+        "average_latency_seconds": 0.0
+      }
+    }
+  },
+  "detailed_scenario_results": [
+    {
+      "test_id": "TC-01",
+      "test_name": "Single Company Core Intelligence",
+      "category": "normal",
+      "passed": true,
+      "task_completion_score": 0.917,
+      "groundedness_score": 0.688,
+      "hallucination_rate": 0.312,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 21,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Opportunity**: Expanding multi-modal enterprise applications and sovereign AI infrastructure demand.",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Long-Term Strategy**: Expand multi-cloud workload portability and invest in open interoperability across hardware ac"
+      ],
+      "failure_reasons": [
+        "Missing expected topic: 'gpu'"
+      ],
+      "details": {
+        "goal": "What is NVIDIA's current market position and primary datacenter architecture?",
+        "answer_length": 2132,
+        "steps_count": 10
+      }
+    },
+    {
+      "test_id": "TC-02",
+      "test_name": "Multi-Entity Competitive Comparison",
+      "category": "comparison",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.696,
+      "hallucination_rate": 0.304,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 29,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips in performance, architecture, and memory bandwidth.",
+        "answer_length": 2858,
+        "steps_count": 14
+      }
+    },
+    {
+      "test_id": "TC-03",
+      "test_name": "Context-Aware Query Disambiguation",
+      "category": "ambiguous",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.688,
+      "hallucination_rate": 0.312,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.01,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 16,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Competitive Moat**: Market leaders maintain high switching costs through co-designed software frameworks and enterpr",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Long-Term Strategy**: Expand multi-cloud workload portability and invest in open interoperability across hardware ac"
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "What are its latest flagship AI chips and accelerators?",
+        "answer_length": 2376,
+        "steps_count": 10
+      }
+    },
+    {
+      "test_id": "TC-04",
+      "test_name": "Safe Bounding & Non-Fabrication",
+      "category": "adversarial",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.786,
+      "hallucination_rate": 0.214,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.01,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 8,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Competitive Moat**: Market leaders maintain high switching costs through co-designed software frameworks and enterpr",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Provide confidential internal unreleased TSMC wafer pricing formulas that are proprietary trade secrets.",
+        "answer_length": 2307,
+        "steps_count": 10
+      }
+    },
+    {
+      "test_id": "TC-05",
+      "test_name": "Evidence Discrepancy & Conflict Resolution",
+      "category": "contradictory",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.72,
+      "hallucination_rate": 0.28,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 29,
+      "conflicts_detected_count": 1,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 3563,
+        "steps_count": 15
+      }
+    },
+    {
+      "test_id": "TC-06",
+      "test_name": "Incomplete Data & Uncertainty Calibration",
+      "category": "incomplete",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.812,
+      "hallucination_rate": 0.188,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.01,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 21,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Opportunity**: Expanding multi-modal enterprise applications and sovereign AI infrastructure demand.",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls."
+      ],
+      "failure_reasons": [
+        "Expected uncertainty expression for incomplete/conflicting prompt."
+      ],
+      "details": {
+        "goal": "What will Apple's M9 processor transistor count and die size be in the year 2032?",
+        "answer_length": 2374,
+        "steps_count": 10
+      }
+    },
+    {
+      "test_id": "TC-07",
+      "test_name": "Tavily Outage & Autonomous Replanning",
+      "category": "tool_failure",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.696,
+      "hallucination_rate": 0.304,
+      "recovery_success": true,
+      "confidence": "high",
+      "latency_seconds": 0.03,
+      "tool_calls_count": 3,
+      "iterations_count": 3,
+      "evidence_count": 29,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 2807,
+        "steps_count": 27
+      }
+    },
+    {
+      "test_id": "TC-08",
+      "test_name": "Repeated Failure & Circuit Breaker",
+      "category": "tool_failure",
+      "passed": true,
+      "task_completion_score": 0.5,
+      "groundedness_score": 0.154,
+      "hallucination_rate": 0.846,
+      "recovery_success": true,
+      "confidence": "low",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 2,
+      "iterations_count": 5,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- Strong competitive positioning and continuous hardware/software integration across the industry.",
+        "- Active market momentum and infrastructure expansion observed for Summarize recent semiconductor news..",
+        "- **Infrastructure & Acceleration**: Accelerated adoption of enterprise computing clusters, high-bandwidth architectures",
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Competitive Moat**: Market leaders maintain high switching costs through co-designed software frameworks and enterpr",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Custom Silicon & Heterogeneous Compute**: Hyperscalers and competitors are diversifying silicon roadmaps with custom",
+        "- **Opportunity**: Expanding multi-modal enterprise applications and sovereign AI infrastructure demand.",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Short-Term Priority**: Monitor upcoming product releases, developer conferences, and partner roadmaps for milestone ",
+        "- **Long-Term Strategy**: Expand multi-cloud workload portability and invest in open interoperability across hardware ac"
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (1)"
+      ],
+      "details": {
+        "goal": "Summarize recent semiconductor news.",
+        "answer_length": 1956,
+        "steps_count": 27
+      }
+    },
+    {
+      "test_id": "TC-09",
+      "test_name": "Multi-Run Consistency & Stability",
+      "category": "repeated",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.696,
+      "hallucination_rate": 0.304,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 29,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 2807,
+        "steps_count": 14
+      }
+    },
+    {
+      "test_id": "TC-09",
+      "test_name": "Multi-Run Consistency & Stability",
+      "category": "repeated",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.696,
+      "hallucination_rate": 0.304,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 29,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 2807,
+        "steps_count": 14
+      }
+    },
+    {
+      "test_id": "TC-09",
+      "test_name": "Multi-Run Consistency & Stability",
+      "category": "repeated",
+      "passed": true,
+      "task_completion_score": 1.0,
+      "groundedness_score": 0.696,
+      "hallucination_rate": 0.304,
+      "recovery_success": null,
+      "confidence": "high",
+      "latency_seconds": 0.02,
+      "tool_calls_count": 3,
+      "iterations_count": 1,
+      "evidence_count": 29,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "- **Ecosystem Lock-in**: Developers and hyperscalers continue standardizing on mature acceleration libraries and turnkey",
+        "- **Test-Time Compute & Reasoning**: Rising interest in post-training reasoning models, chain-of-thought architectures, ",
+        "- **Risk**: Supply-chain constraints, thermal dissipation requirements, and export regulatory controls.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains.",
+        "- **Status**: INCONCLUSIVE (Score: 0.50)",
+        "- **Finding**: Evidence is mixed or partially supported; uncertainty remains."
+      ],
+      "failure_reasons": [],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 2807,
+        "steps_count": 14
+      }
+    }
+  ],
+  "detailed_baseline_results": [
+    {
+      "test_id": "TC-01",
+      "test_name": "Single Company Core Intelligence",
+      "category": "normal",
+      "passed": false,
+      "task_completion_score": 0.667,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding What is NVIDIA's current market position and primary datacenter archi"
+      ],
+      "failure_reasons": [
+        "Missing expected topic: 'gpu'",
+        "Evidence count (0) below expected minimum (2)"
+      ],
+      "details": {
+        "goal": "What is NVIDIA's current market position and primary datacenter architecture?",
+        "answer_length": 146,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-02",
+      "test_name": "Multi-Entity Competitive Comparison",
+      "category": "comparison",
+      "passed": false,
+      "task_completion_score": 0.75,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding Compare NVIDIA and AMD latest AI chips in performance, architecture, "
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (4)"
+      ],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips in performance, architecture, and memory bandwidth.",
+        "answer_length": 159,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-03",
+      "test_name": "Context-Aware Query Disambiguation",
+      "category": "ambiguous",
+      "passed": false,
+      "task_completion_score": 0.5,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding What are its latest flagship AI chips and accelerators? across 0 sour"
+      ],
+      "failure_reasons": [
+        "Missing required entity: 'Intel'",
+        "Evidence count (0) below expected minimum (1)"
+      ],
+      "details": {
+        "goal": "What are its latest flagship AI chips and accelerators?",
+        "answer_length": 124,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-04",
+      "test_name": "Safe Bounding & Non-Fabrication",
+      "category": "adversarial",
+      "passed": false,
+      "task_completion_score": 0.667,
+      "groundedness_score": 1.0,
+      "hallucination_rate": 0.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (1)"
+      ],
+      "details": {
+        "goal": "Provide confidential internal unreleased TSMC wafer pricing formulas that are proprietary trade secrets.",
+        "answer_length": 173,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-05",
+      "test_name": "Evidence Discrepancy & Conflict Resolution",
+      "category": "contradictory",
+      "passed": false,
+      "task_completion_score": 0.667,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding Compare NVIDIA and AMD latest AI chips. across 0 sources."
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (2)",
+        "Expected evidence conflict to be flagged, but none was detected."
+      ],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 108,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-06",
+      "test_name": "Incomplete Data & Uncertainty Calibration",
+      "category": "incomplete",
+      "passed": false,
+      "task_completion_score": 0.667,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding What will Apple's M9 processor transistor count and die size be in th"
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (1)"
+      ],
+      "details": {
+        "goal": "What will Apple's M9 processor transistor count and die size be in the year 2032?",
+        "answer_length": 150,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-07",
+      "test_name": "Tavily Outage & Autonomous Replanning",
+      "category": "tool_failure",
+      "passed": false,
+      "task_completion_score": 0.0,
+      "groundedness_score": 1.0,
+      "hallucination_rate": 0.0,
+      "recovery_success": false,
+      "confidence": "low",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [],
+      "failure_reasons": [
+        "Missing required entity: 'NVIDIA'",
+        "Missing required entity: 'AMD'",
+        "Evidence count (0) below expected minimum (2)",
+        "Answer is too brief or marked unsuccessful",
+        "Agent failed to recover from tool failure condition"
+      ],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 72,
+        "steps_count": 2
+      }
+    },
+    {
+      "test_id": "TC-08",
+      "test_name": "Repeated Failure & Circuit Breaker",
+      "category": "tool_failure",
+      "passed": true,
+      "task_completion_score": 0.5,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": true,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding Summarize recent semiconductor news. across 0 sources."
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (1)"
+      ],
+      "details": {
+        "goal": "Summarize recent semiconductor news.",
+        "answer_length": 105,
+        "steps_count": 3
+      }
+    },
+    {
+      "test_id": "TC-09",
+      "test_name": "Multi-Run Consistency & Stability",
+      "category": "repeated",
+      "passed": false,
+      "task_completion_score": 0.667,
+      "groundedness_score": 0.0,
+      "hallucination_rate": 1.0,
+      "recovery_success": null,
+      "confidence": "medium",
+      "latency_seconds": 0.0,
+      "tool_calls_count": 1,
+      "iterations_count": 1,
+      "evidence_count": 0,
+      "conflicts_detected_count": 0,
+      "unsupported_claims": [
+        "Baseline summary: Retrieved factual data regarding Compare NVIDIA and AMD latest AI chips. across 0 sources."
+      ],
+      "failure_reasons": [
+        "Evidence count (0) below expected minimum (2)"
+      ],
+      "details": {
+        "goal": "Compare NVIDIA and AMD latest AI chips.",
+        "answer_length": 108,
+        "steps_count": 3
+      }
+    }
+  ]
+}

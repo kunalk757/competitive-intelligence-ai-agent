@@ -4,6 +4,7 @@ import logging
 import sys
 import os
 from unittest.mock import AsyncMock
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -14,6 +15,7 @@ from app.agent.reasoning import ReasoningEngine
 
 logging.basicConfig(level=logging.INFO)
 
+@pytest.mark.asyncio
 async def test_all_ai_intelligence_query_flows():
     registry = ToolRegistry()
     mock_reasoning = AsyncMock(spec=ReasoningEngine)

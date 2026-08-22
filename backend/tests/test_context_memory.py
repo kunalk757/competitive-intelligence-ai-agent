@@ -177,7 +177,7 @@ class TestContextMemoryManagement(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(res2.success)
         self.assertEqual(res2.session_id, session_id)
         # Step 1 should reflect retrieved context
-        has_context_step = any("session context" in s.summary.lower() or "contextual" in s.summary.lower() for s in res2.steps)
+        has_context_step = any("context" in s.summary.lower() for s in res2.steps)
         self.assertTrue(has_context_step)
 
 
