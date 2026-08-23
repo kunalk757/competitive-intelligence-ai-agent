@@ -73,3 +73,45 @@ CREATE POLICY "Allow service role full access to company_profiles"
     USING (true)
     WITH CHECK (true);
 
+-- ==============================================================================
+-- Research Papers Schema (Semantic Scholar Integration)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.research_papers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    external_id TEXT UNIQUE,
+    title TEXT NOT NULL,
+    authors JSONB DEFAULT '[]'::jsonb,
+    abstract TEXT,
+    year INTEGER,
+    venue TEXT,
+    url TEXT,
+    citation_count INTEGER DEFAULT 0,
+    fields_of_study JSONB DEFAULT '[]'::jsonb,
+    source TEXT DEFAULT 'Semantic Scholar',
+    fetched_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_research_papers_external_id 
+    ON public.research_papers (external_id);
+
+CREATE INDEX IF NOT EXISTS idx_research_papers_year 
+    ON public.research_papers (year DESC);
+
+CREATE INDEX IF NOT EXISTS idx_research_papers_citations 
+    ON public.research_papers (citation_count DESC);
+
+ALTER TABLE public.research_papers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access to research_papers" 
+    ON public.research_papers 
+    FOR SELECT 
+    USING (true);
+
+CREATE POLICY "Allow service role full access to research_papers" 
+    ON public.research_papers 
+    FOR ALL 
+    USING (true)
+    WITH CHECK (true);
+

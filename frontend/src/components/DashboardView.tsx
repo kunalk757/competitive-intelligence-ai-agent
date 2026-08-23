@@ -1,7 +1,6 @@
 "use client";
 
 import NewsList from "./NewsList";
-import AlertList from "./AlertList";
 import { NewsItemData } from "./NewsCard";
 
 interface DashboardViewProps {
@@ -10,6 +9,7 @@ interface DashboardViewProps {
   onRefreshNews?: () => void;
   isRefreshing?: boolean;
   onNewResearchClick: (initialGoal?: string) => void;
+  onViewAllNews?: () => void;
 }
 
 export default function DashboardView({
@@ -18,15 +18,16 @@ export default function DashboardView({
   onRefreshNews,
   isRefreshing = false,
   onNewResearchClick,
+  onViewAllNews,
 }: DashboardViewProps) {
   return (
     <div>
       {/* Dashboard Top Heading */}
       <div className="dashboard-heading-row">
         <div>
-          <h1 className="dashboard-title">Good morning, Alex</h1>
+          <h1 className="dashboard-title">Competitive Intelligence Dashboard</h1>
           <p className="dashboard-subtitle">
-            Here&apos;s what&apos;s happening in your intelligence dashboard today.
+            Real-time market intelligence, competitor tracking, and synthesized research.
           </p>
         </div>
 
@@ -50,27 +51,19 @@ export default function DashboardView({
         </button>
       </div>
 
-      {/* 2-Column Content Grid */}
+      {/* Rebalanced Content Layout */}
       <div className="dashboard-grid">
         <NewsList
           news={news}
           lastUpdated={lastUpdated}
           onRefreshNews={onRefreshNews}
           isRefreshing={isRefreshing}
-          onViewAll={() =>
-            onNewResearchClick(
-              "Analyze recent semiconductor and AI chip competitor news."
-            )
-          }
-        />
-
-        {/* Intelligence Alerts remain empty until backed by real backend alert triggers */}
-        <AlertList
-          alerts={[]}
-          onViewAll={() =>
-            onNewResearchClick(
-              "Investigate all high-priority patent and competitor alerts."
-            )
+          onViewAll={
+            onViewAllNews ||
+            (() =>
+              onNewResearchClick(
+                "Analyze recent semiconductor and AI chip competitor news."
+              ))
           }
         />
       </div>

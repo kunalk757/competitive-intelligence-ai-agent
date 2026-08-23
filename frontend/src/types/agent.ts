@@ -64,6 +64,25 @@ export interface AgentRunResponse {
   tools_used: string[];
   iterations: number;
   session_id?: string;
+  trace_id?: string;
+  trace_summary?: {
+    trace_id: string;
+    agent_run_id: string;
+    total_latency_ms: number;
+    spans_count: number;
+    tool_calls_count: number;
+    diagnoses_count: number;
+    status: string;
+  };
+  diagnoses?: Array<{
+    diagnosis: string;
+    affected_tool: string;
+    error_category: string;
+    recovery_action: string;
+    circuit_breaker_triggered?: boolean;
+    timestamp?: string;
+  }>;
+  confidence?: string;
   news_results?: NewsArticleData[];
   companies?: CompanyCardData[];
   news?: NewsArticleData[];

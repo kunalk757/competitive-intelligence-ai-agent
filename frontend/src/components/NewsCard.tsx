@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface NewsItemData {
   id?: string;
   title: string;
-  source: string;
+  source?: string;
+  source_name?: string;
   published_at?: string;
+  fetched_at?: string;
   time?: string;
   description?: string;
   category?: string;
+  company?: string;
   company_tag?: string;
   companyTag?: string;
   url?: string;
-  image_url?: string;
+  source_url?: string;
+  image_url?: string | null;
+  image?: string | null;
   thumbnailBadge?: string;
 }
 
@@ -41,105 +46,111 @@ export default function NewsCard({ item }: NewsCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const displayTime = formatNewsDate(item.published_at || item.time);
-  const displayCompany = item.company_tag || item.companyTag;
-  const displayCategory = item.category || "News";
+  const displaySource = item.source || item.source_name || "Intelligence News";
+  const displayCompany = item.company_tag || item.companyTag || item.company;
+  const displayCategory = item.category || "Technology";
+  const articleUrl = item.url || item.source_url;
+  const rawImageUrl = item.image_url || item.image;
+  const hasValidImage = Boolean(rawImageUrl && rawImageUrl.trim() !== "");
+
+  // Reset imgError state when the article's image URL or title changes
+  useEffect(() => {
+    setImgError(false);
+  }, [rawImageUrl, item.title]);
 
   const handleCardClick = () => {
-    if (item.url) {
-      window.open(item.url, "_blank", "noopener,noreferrer");
+    if (articleUrl) {
+      window.open(articleUrl, "_blank", "noopener,noreferrer");
     }
+  };
+
+  const handleOpenSource = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (articleUrl) {
+      window.open(articleUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleToggleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSaved(!isSaved);
   };
 
   return (
     <article
-      className="news-item"
+      className="news-card"
       onClick={handleCardClick}
       style={{
-        cursor: item.url ? "pointer" : "default",
+        cursor: articleUrl ? "pointer" : "default",
         userSelect: "none",
       }}
     >
-      {/* Thumbnail or Badge Fallback */}
-      <div className="news-thumbnail" style={{ overflow: "hidden" }}>
-        {item.image_url && !imgError ? (
+      {/* Top News Article Image / Clean Fallback Container */}
+      <div className="news-card-image-wrap">
+        {hasValidImage && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={item.image_url}
+            src={rawImageUrl!}
             alt={item.title}
             onError={() => setImgError(true)}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            className="news-card-image"
+            loading="lazy"
+            referrerPolicy="no-referrer"
           />
         ) : (
-          <span>
-            {item.thumbnailBadge ||
-              (item.source ? item.source.slice(0, 3).toUpperCase() : "NW")}
-          </span>
+          <div className="news-card-image-fallback">
+            <span className="news-card-fallback-badge">
+              📰 {item.thumbnailBadge || displaySource.slice(0, 3).toUpperCase()}
+            </span>
+            <span className="news-card-fallback-caption">
+              {displaySource}
+            </span>
+          </div>
         )}
       </div>
 
-      <div className="news-content">
-        <div>
-          <div className="news-meta-top">
-            <div className="news-source-time">
-              <strong>{item.source}</strong>
+      {/* Card Body */}
+      <div className="news-card-body">
+        <div className="news-card-content">
+          {/* Source & Publication Date & Bookmark Action */}
+          <div className="news-card-meta">
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span className="news-card-source">
+                🏢 {displaySource}
+              </span>
               <span>•</span>
-              <span>{displayTime}</span>
+              <span className="news-card-date">
+                🗓️ {displayTime}
+              </span>
             </div>
-            <div
-              className="news-actions"
-              onClick={(e) => e.stopPropagation()}
+
+            <button
+              type="button"
+              className="action-icon-btn"
+              onClick={handleToggleSave}
+              title={isSaved ? "Article Saved" : "Save article"}
+              style={{ color: isSaved ? "var(--primary)" : undefined }}
             >
-              <button
-                type="button"
-                className="action-icon-btn"
-                onClick={() => setIsSaved(!isSaved)}
-                title={isSaved ? "Saved" : "Save article"}
-                style={{ color: isSaved ? "var(--primary)" : undefined }}
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill={isSaved ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill={isSaved ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-                </svg>
-              </button>
-              {item.url && (
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="action-icon-btn"
-                  title="Open source article"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-              )}
-            </div>
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+              </svg>
+            </button>
           </div>
 
-          <h3 className="news-title">
-            {item.url ? (
+          {/* Headline */}
+          <h3 className="news-card-title" title={item.title}>
+            {articleUrl ? (
               <a
-                href={item.url}
+                href={articleUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "inherit", textDecoration: "none" }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {item.title}
@@ -149,13 +160,17 @@ export default function NewsCard({ item }: NewsCardProps) {
             )}
           </h3>
 
+          {/* Short Description */}
           {item.description && (
-            <p className="news-desc">{item.description}</p>
+            <p className="news-card-desc" title={item.description}>
+              {item.description}
+            </p>
           )}
         </div>
 
-        <div className="news-tags-actions">
-          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+        {/* Tags & Open Article Footer */}
+        <div className="news-card-footer">
+          <div className="news-card-tags">
             {displayCompany && (
               <span className="tag-pill tag-company">{displayCompany}</span>
             )}
@@ -163,6 +178,31 @@ export default function NewsCard({ item }: NewsCardProps) {
               <span className="tag-pill">{displayCategory}</span>
             )}
           </div>
+
+          {articleUrl && (
+            <button
+              type="button"
+              className="btn-news-open"
+              onClick={handleOpenSource}
+              title="Open full news article in external tab"
+            >
+              <span>Open Article</span>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </article>

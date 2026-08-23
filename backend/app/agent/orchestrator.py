@@ -16,6 +16,7 @@ from app.agent.intelligence_analyst import IntelligenceAnalystAgent, default_ana
 from app.context.context_manager import ContextManager, default_context_manager
 from app.agent.agent_graph.graph import investigation_graph
 from app.agent.agent_graph.checkpoint import get_graph_config
+from app.observability.tracer import default_tracer
 
 logger = logging.getLogger("orchestrator")
 
@@ -33,6 +34,7 @@ class MultiAgentOrchestrator:
     6. Self-Evaluation Node (Pre-output completeness & confidence verification)
     7. Autonomous Replanning & Tool Fallback (Failure recovery, circuit breakers)
     8. Checkpointing & Session Memory (State persistence)
+    9. End-to-End Tracing & Observability (Task 7)
     """
 
     def __init__(
@@ -47,11 +49,18 @@ class MultiAgentOrchestrator:
 
     async def run(self, request: AgentRunRequest) -> AgentRunResponse:
         """
-        Execute the dynamic LangGraph multi-agent investigation workflow.
+        Execute the dynamic LangGraph multi-agent investigation workflow with end-to-end tracing.
         """
         goal = request.goal.strip()
         session_id = request.session_id or f"session-{uuid.uuid4().hex[:12]}"
         logger.info(f"LangGraph Orchestrator received request for session '{session_id}': '{goal}'")
+
+        # Initialize end-to-end investigation trace
+        trace = default_tracer.start_trace(
+            session_id=session_id,
+            user_goal=goal,
+            metadata={"adversarial_config": getattr(request, "adversarial_config", None)},
+        )
 
         # Initial state channels for LangGraph
         initial_state = {
@@ -63,6 +72,8 @@ class MultiAgentOrchestrator:
             "max_tool_calls": getattr(request, "max_tool_calls", 8) or 8,
             "max_iterations": request.max_iterations or 5,
             "adversarial_config": getattr(request, "adversarial_config", None),
+            "trace_id": trace.trace_id,
+            "diagnoses": [],
             "tool_call_count": 0,
             "iteration_count": 0,
             "tools_used": [],
@@ -155,14 +166,39 @@ class MultiAgentOrchestrator:
             confidence = final_state.get("confidence", "high")
             hypotheses = final_state.get("hypotheses", [])
             conflicts = final_state.get("conflicting_evidence", [])
+            diagnoses = final_state.get("diagnoses", [])
+            iteration_count = final_state.get("iteration_count", 1)
+
+            # Finalize trace and persist
+            finalized_trace = default_tracer.finalize_trace(
+                trace_id=trace.trace_id,
+                status="recovered" if len(diagnoses) > 0 else "completed",
+                confidence=confidence,
+                iterations=iteration_count,
+            )
+
+            trace_summary = None
+            if finalized_trace:
+                trace_summary = {
+                    "trace_id": finalized_trace.trace_id,
+                    "agent_run_id": finalized_trace.agent_run_id,
+                    "total_latency_ms": finalized_trace.total_latency_ms,
+                    "spans_count": len(finalized_trace.spans),
+                    "tool_calls_count": finalized_trace.resource_metrics.total_tool_calls,
+                    "diagnoses_count": len(finalized_trace.root_cause_diagnoses),
+                    "status": finalized_trace.status,
+                }
 
             return AgentRunResponse(
                 success=True,
                 answer=final_answer,
                 steps=converted_steps,
                 tools_used=tools_used,
-                iterations=final_state.get("iteration_count", 1),
+                iterations=iteration_count,
                 session_id=session_id,
+                trace_id=trace.trace_id,
+                trace_summary=trace_summary,
+                diagnoses=diagnoses,
                 companies=unique_companies,
                 news=unique_news,
                 news_results=unique_news,
@@ -176,6 +212,12 @@ class MultiAgentOrchestrator:
 
         except Exception as e:
             logger.exception(f"LangGraph execution encountered an error: {e}")
+            default_tracer.finalize_trace(
+                trace_id=trace.trace_id,
+                status="failed",
+                confidence="low",
+                iterations=1,
+            )
             return AgentRunResponse(
                 success=False,
                 answer="Investigation failed during LangGraph execution.",
@@ -190,6 +232,7 @@ class MultiAgentOrchestrator:
                 tools_used=[],
                 iterations=1,
                 session_id=session_id,
+                trace_id=trace.trace_id,
                 error=str(e),
             )
 

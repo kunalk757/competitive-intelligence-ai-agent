@@ -173,6 +173,10 @@ class AgentRunRequest(BaseModel):
         default=None,
         description="Optional test-mode configuration for simulating tool failures or conflicting evidence.",
     )
+    trace_id: Optional[str] = Field(
+        default=None,
+        description="Optional external or pre-assigned trace ID.",
+    )
 
 
 class AgentRunResponse(BaseModel):
@@ -183,6 +187,10 @@ class AgentRunResponse(BaseModel):
     tools_used: List[str]
     iterations: int
     session_id: Optional[str] = None
+    # Observability & Tracing Metadata (Task 7)
+    trace_id: Optional[str] = None
+    trace_summary: Optional[Dict[str, Any]] = None
+    diagnoses: List[Dict[str, Any]] = Field(default_factory=list)
     # Backward compatible field aliases
     news_results: List[NewsArticle] = Field(default_factory=list)
     # Multi-source structured results

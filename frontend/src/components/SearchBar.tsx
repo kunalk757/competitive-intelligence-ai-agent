@@ -9,7 +9,7 @@ interface SearchBarProps {
 export default function SearchBar({
   value,
   onChange,
-  placeholder = "Search competitors, patents, or research...",
+  placeholder = "Search companies, news, or research...",
 }: SearchBarProps) {
   return (
     <div className="header-search">

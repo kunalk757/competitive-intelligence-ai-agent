@@ -60,8 +60,13 @@ async def get_latest_news(
     # Normalize fields for frontend component compatibility
     formatted = []
     for art in saved_articles:
+        article_id = (
+            str(art.get("id"))
+            if art.get("id")
+            else (art.get("source_url") or art.get("url") or f"news-{art.get('title', '')[:30]}")
+        )
         formatted.append({
-            "id": str(art.get("id", "")),
+            "id": article_id,
             "title": art.get("title", ""),
             "description": art.get("description", ""),
             "source": art.get("source_name") or art.get("source") or "News",

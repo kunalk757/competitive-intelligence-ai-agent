@@ -159,7 +159,7 @@ export default function NewsList({
       </div>
 
       {hasNews ? (
-        <div className="news-list">
+        <div className="news-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
           {news.map((item, idx) => (
             <NewsCard key={item.id || item.url || `news-${idx}`} item={item} />
           ))}

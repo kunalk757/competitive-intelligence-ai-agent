@@ -31,57 +31,69 @@ def test_normalization_and_tagging():
 def test_database_deduplication_and_sorting():
     """Verify Supabase/local repository deduplication and sorting."""
     async def _run():
-        repo = SupabaseNewsRepository()
-        
+        import tempfile
         import uuid
-        run_id = str(uuid.uuid4())[:8]
-        url1 = f"https://techcrunch.com/article-1-{run_id}"
-        url2 = f"https://reuters.com/article-2-{run_id}"
+        
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+            tmp_path = tmp.name
+        
+        try:
+            repo = SupabaseNewsRepository(local_storage_file=tmp_path)
+            
+            run_id = str(uuid.uuid4())[:8]
+            url1 = f"https://techcrunch.com/article-1-{run_id}"
+            url2 = f"https://reuters.com/article-2-{run_id}"
 
-        # Test articles
-        sample_articles = [
-            {
-                "title": "Article 1 - Older",
-                "description": "Description 1",
-                "source_name": "TechCrunch",
-                "source_url": url1,
-                "image_url": "https://techcrunch.com/img1.jpg",
-                "published_at": "2026-08-25T10:00:00Z",
-                "category": "Technology",
-                "company": "NVIDIA",
-            },
-            {
-                "title": "Article 2 - Newer",
-                "description": "Description 2",
-                "source_name": "Reuters",
-                "source_url": url2,
-                "image_url": "https://reuters.com/img2.jpg",
-                "published_at": "2026-08-25T11:00:00Z",
-                "category": "Semiconductors",
-                "company": "Google",
-            },
-        ]
-        
-        # Insert articles
-        res1 = await repo.upsert_articles(sample_articles)
-        assert res1["inserted"] >= 2
-        
-        # Query saved articles
-        articles = await repo.get_saved_articles(limit=100)
-        assert len(articles) >= 2
-        # Newer article should be first
-        urls = [a["source_url"] for a in articles]
-        assert url2 in urls
-        assert url1 in urls
-        
-        # Test deduplication: re-inserting the exact same articles should insert 0 new items
-        res2 = await repo.upsert_articles(sample_articles)
-        assert res2["inserted"] == 0
-        
-        # Verify metadata
-        meta = await repo.get_latest_sync_metadata()
-        assert meta["total_count"] >= 2
-        assert meta["last_updated"] is not None
+            # Test articles
+            sample_articles = [
+                {
+                    "title": "Article 1 - Older",
+                    "description": "Description 1",
+                    "source_name": "TechCrunch",
+                    "source_url": url1,
+                    "image_url": "https://techcrunch.com/img1.jpg",
+                    "published_at": "2026-08-25T10:00:00Z",
+                    "category": "Technology",
+                    "company": "NVIDIA",
+                },
+                {
+                    "title": "Article 2 - Newer",
+                    "description": "Description 2",
+                    "source_name": "Reuters",
+                    "source_url": url2,
+                    "image_url": "https://reuters.com/img2.jpg",
+                    "published_at": "2026-08-25T11:00:00Z",
+                    "category": "Semiconductors",
+                    "company": "Google",
+                },
+            ]
+            
+            # Insert articles
+            res1 = await repo.upsert_articles(sample_articles)
+            assert res1["inserted"] >= 2
+            
+            # Query saved articles
+            articles = await repo.get_saved_articles(limit=100)
+            assert len(articles) >= 2
+            # Newer article should be first
+            urls = [a["source_url"] for a in articles]
+            assert url2 in urls
+            assert url1 in urls
+            
+            # Test deduplication: re-inserting the exact same articles should insert 0 new items
+            res2 = await repo.upsert_articles(sample_articles)
+            assert res2["inserted"] == 0
+            
+            # Verify metadata
+            meta = await repo.get_latest_sync_metadata()
+            assert meta["total_count"] >= 2
+            assert meta["last_updated"] is not None
+        finally:
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
 
     asyncio.run(_run())
 

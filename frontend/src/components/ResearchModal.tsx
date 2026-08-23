@@ -106,7 +106,7 @@ export default function ResearchModal({
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            Autonomous ReAct Intelligence Investigation
+            Autonomous Intelligence Investigation
           </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
             ✕
@@ -125,7 +125,7 @@ export default function ResearchModal({
                 rows={2}
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="e.g., Analyze the competitive landscape for AI chips and recent patent filings."
+                placeholder="e.g., Analyze the competitive landscape for AI chips and compute architectures."
                 required
               />
             </div>

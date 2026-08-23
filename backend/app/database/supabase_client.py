@@ -17,11 +17,14 @@ class SupabaseNewsRepository:
     with local fallback storage to ensure zero downtime and seamless testing.
     """
 
-    def __init__(self):
+    def __init__(self, local_storage_file: Optional[str] = None):
         self.supabase_url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
         self.supabase_key = os.getenv("SUPABASE_KEY", "").strip()
-        self._local_storage_file = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "saved_news.json"
+        self._local_storage_file = (
+            local_storage_file
+            or os.path.join(
+                os.path.dirname(__file__), "..", "..", "data", "saved_news.json"
+            )
         )
         self._ensure_local_storage_dir()
 

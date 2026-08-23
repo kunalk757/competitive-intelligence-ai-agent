@@ -6,6 +6,8 @@ import Header from "@/components/Header";
 import AIIntelligenceView from "@/components/AIIntelligenceView";
 import DashboardView from "@/components/DashboardView";
 import CompaniesView from "@/components/CompaniesView";
+import ResearchPapersView from "@/components/ResearchPapersView";
+import NewsView from "@/components/NewsView";
 import ResearchModal from "@/components/ResearchModal";
 import { NewsItemData } from "@/components/NewsCard";
 
@@ -176,7 +178,7 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <div className="main-wrapper">
+      <div className={`main-wrapper ${activeTab === "intelligence" ? "chat-main-wrapper" : ""}`}>
         {/* Top Header */}
         <Header
           searchQuery={searchQuery}
@@ -188,7 +190,7 @@ export default function Home() {
         />
 
         {/* Dashboard / Intelligence Content */}
-        <main className="content-area">
+        <main className={`content-area ${activeTab === "intelligence" ? "chat-content-area" : ""}`}>
           {activeTab === "intelligence" && (
             <AIIntelligenceView
               onNavigateToCompany={() => {
@@ -204,6 +206,7 @@ export default function Home() {
               onRefreshNews={handleRefreshNews}
               isRefreshing={isRefreshingNews}
               onNewResearchClick={openNewResearch}
+              onViewAllNews={() => setActiveTab("news")}
             />
           )}
 
@@ -211,7 +214,75 @@ export default function Home() {
             <CompaniesView />
           )}
 
-          {activeTab !== "intelligence" && activeTab !== "dashboard" && activeTab !== "companies" && (
+          {activeTab === "papers" && (
+            <ResearchPapersView
+              backendUrl={backendUrl}
+              onInvestigatePaper={(paperTitle) => {
+                openNewResearch(`Analyze research paper and competitive implications: "${paperTitle}"`);
+              }}
+            />
+          )}
+
+          {activeTab === "news" && (
+            <NewsView
+              news={latestNews}
+              lastUpdated={lastUpdated}
+              onRefreshNews={handleRefreshNews}
+              isRefreshing={isRefreshingNews}
+            />
+          )}
+
+          {activeTab === "settings" && (
+            <div
+              className="dashboard-card"
+              style={{ padding: "2rem 2.5rem", maxWidth: "760px", margin: "0 auto" }}
+            >
+              <h2
+                style={{
+                  fontSize: "1.35rem",
+                  fontWeight: 700,
+                  marginBottom: "0.75rem",
+                  color: "var(--text-main)",
+                }}
+              >
+                Settings &amp; Environment
+              </h2>
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "0.925rem",
+                  lineHeight: 1.6,
+                  marginBottom: "1.5rem",
+                }}
+              >
+                API integrations (Gemini, Semantic Scholar, GNews, Supabase) and observability tracers are managed securely via backend environment configuration.
+              </p>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  background: healthStatus === "healthy" ? "rgba(16, 185, 129, 0.1)" : "rgba(234, 179, 8, 0.1)",
+                  border: `1px solid ${healthStatus === "healthy" ? "rgba(16, 185, 129, 0.3)" : "rgba(234, 179, 8, 0.3)"}`,
+                  color: healthStatus === "healthy" ? "#059669" : "#b45309",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <span>●</span>
+                <span>Backend Health: {healthStatus === "healthy" ? "Connected & Operational" : healthStatus.toUpperCase()}</span>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "intelligence" &&
+            activeTab !== "dashboard" &&
+            activeTab !== "companies" &&
+            activeTab !== "papers" &&
+            activeTab !== "news" &&
+            activeTab !== "settings" && (
             <div
               className="dashboard-card"
               style={{ padding: "2.5rem", textAlign: "center" }}
@@ -235,7 +306,7 @@ export default function Home() {
                 }}
               >
                 View, filter, and track competitive insights categorized under{" "}
-                {activeTab}. You can launch an autonomous ReAct investigation at
+                {activeTab}. You can launch an autonomous AI investigation at
                 any time.
               </p>
               <button
@@ -248,7 +319,7 @@ export default function Home() {
                 }
                 style={{ margin: "0 auto" }}
               >
-                🚀 Run {activeTab} Investigation
+                Run {activeTab} Investigation
               </button>
             </div>
           )}

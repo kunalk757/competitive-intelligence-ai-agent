@@ -163,3 +163,7 @@ class GraphInvestigationState(TypedDict, total=False):
     
     # Adversarial Testing Mode (Isolated Development Configuration)
     adversarial_config: Optional[Dict[str, Any]]
+    
+    # Observability & Tracing Context (Task 7)
+    trace_id: Optional[str]
+    diagnoses: List[Dict[str, Any]]

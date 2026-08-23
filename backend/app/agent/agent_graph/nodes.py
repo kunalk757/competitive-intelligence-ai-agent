@@ -13,6 +13,7 @@ Implements all node functions:
 """
 
 import asyncio
+import time
 import uuid
 import logging
 from typing import Any, Dict, List, Optional
@@ -47,6 +48,8 @@ from app.agent.agent_graph.router import detect_loop_or_deadlock, is_resource_bu
 from app.agent.tool_registry import default_tool_registry
 from app.agent.intelligence_analyst import default_analyst_agent
 from app.context.context_manager import default_context_manager
+from app.observability.tracer import default_tracer
+from app.observability.diagnostics import RootCauseDiagnosticEngine
 
 logger = logging.getLogger("graph_nodes")
 
@@ -55,9 +58,11 @@ async def context_node(state: GraphInvestigationState) -> Dict[str, Any]:
     """
     Step 1: Retrieve conversational session memory and disambiguate query.
     """
+    t0 = time.perf_counter()
     user_query = state.get("user_query", "").strip()
     session_id = state.get("session_id") or f"session-{uuid.uuid4().hex[:12]}"
     chat_history = state.get("chat_history")
+    trace_id = state.get("trace_id")
     
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -99,6 +104,15 @@ async def context_node(state: GraphInvestigationState) -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="context_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={"has_context": bool(relevant_context_dict and relevant_context_dict.get("has_context"))},
+        )
+
     return {
         "session_id": session_id,
         "investigation_goal": investigation_goal,
@@ -113,12 +127,14 @@ async def planner_node(state: GraphInvestigationState) -> Dict[str, Any]:
     """
     Step 2: Dynamically inspect the query, classify intent, and build subtasks & hypotheses.
     """
+    t0 = time.perf_counter()
     user_query = state.get("user_query", "")
     investigation_goal = state.get("investigation_goal") or user_query
     relevant_context = state.get("relevant_context")
     max_tool_calls = state.get("max_tool_calls", 8)
     max_iterations = state.get("max_iterations", 5)
     adversarial_config = state.get("adversarial_config")
+    trace_id = state.get("trace_id")
 
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -151,6 +167,19 @@ async def planner_node(state: GraphInvestigationState) -> Dict[str, Any]:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="planner_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={
+                "subtasks_count": len(subtasks),
+                "entities_count": len(entities),
+                "hypotheses_count": len(hypotheses),
+            },
+        )
+
     return {
         "task_plan": task_plan,
         "subtasks": [st.model_dump() for st in subtasks],
@@ -169,8 +198,10 @@ async def _execute_single_subtask(
     subtask: Dict[str, Any],
     adversarial_config: Optional[Dict[str, Any]] = None,
     unavailable_tools: Optional[List[str]] = None,
+    trace_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Helper to execute a single research tool with failure simulation / fallback."""
+    """Helper to execute a single research tool with failure simulation / fallback / tracing."""
+    t_start = time.perf_counter()
     tool_name = subtask.get("tool_name", "")
     tool_input = subtask.get("tool_input", {})
     subtask_id = subtask.get("id", "")
@@ -180,11 +211,23 @@ async def _execute_single_subtask(
 
     # 1. Check if tool is marked permanently unavailable
     if tool_name in unavail:
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
+        err_msg = f"Tool '{tool_name}' is unavailable due to prior circuit breaker."
+        if trace_id:
+            default_tracer.record_tool_span(
+                trace_id=trace_id,
+                tool_name=tool_name,
+                duration_ms=duration_ms,
+                success=False,
+                error_type="CIRCUIT_BREAKER_TRIGGERED",
+                error_message=err_msg,
+                fallback_used=True,
+            )
         return {
             "subtask_id": subtask_id,
             "tool_name": tool_name,
             "success": False,
-            "error": f"Tool '{tool_name}' is unavailable due to prior circuit breaker.",
+            "error": err_msg,
             "is_permanent_fail": True,
         }
 
@@ -192,51 +235,114 @@ async def _execute_single_subtask(
     if adversarial_config:
         # Simulated Tavily failure
         if tool_name in ["search_web", "search_research_papers"] and adversarial_config.get("force_tavily_fail"):
+            duration_ms = (time.perf_counter() - t_start) * 1000.0
+            err_msg = "Simulated Tavily API failure (503 Service Unavailable / Rate Limit)."
+            if trace_id:
+                default_tracer.record_tool_span(
+                    trace_id=trace_id,
+                    tool_name=tool_name,
+                    duration_ms=duration_ms,
+                    success=False,
+                    error_type="SERVICE_UNAVAILABLE",
+                    error_message=err_msg,
+                    fallback_used=True,
+                )
             return {
                 "subtask_id": subtask_id,
                 "tool_name": tool_name,
                 "success": False,
-                "error": "Simulated Tavily API failure (503 Service Unavailable / Rate Limit).",
+                "error": err_msg,
                 "is_simulated": True,
             }
         # Simulated GNews failure
         if tool_name == "search_news" and adversarial_config.get("force_gnews_fail"):
+            duration_ms = (time.perf_counter() - t_start) * 1000.0
+            err_msg = "Simulated GNews API failure (429 Too Many Requests)."
+            if trace_id:
+                default_tracer.record_tool_span(
+                    trace_id=trace_id,
+                    tool_name=tool_name,
+                    duration_ms=duration_ms,
+                    success=False,
+                    error_type="RATE_LIMIT_EXCEEDED",
+                    error_message=err_msg,
+                    fallback_used=True,
+                )
             return {
                 "subtask_id": subtask_id,
                 "tool_name": tool_name,
                 "success": False,
-                "error": "Simulated GNews API failure (429 Too Many Requests).",
+                "error": err_msg,
                 "is_simulated": True,
             }
         # Simulated repeated tool failure
         if adversarial_config.get("force_repeated_tool_fail"):
             target_fail = adversarial_config.get("force_repeated_tool_fail")
             if tool_name == target_fail or target_fail == "all":
+                duration_ms = (time.perf_counter() - t_start) * 1000.0
+                err_msg = f"Simulated persistent failure for '{tool_name}'."
+                if trace_id:
+                    default_tracer.record_tool_span(
+                        trace_id=trace_id,
+                        tool_name=tool_name,
+                        duration_ms=duration_ms,
+                        success=False,
+                        error_type="CIRCUIT_BREAKER_TRIGGERED",
+                        error_message=err_msg,
+                        fallback_used=True,
+                    )
                 return {
                     "subtask_id": subtask_id,
                     "tool_name": tool_name,
                     "success": False,
-                    "error": f"Simulated persistent failure for '{tool_name}'.",
+                    "error": err_msg,
                     "is_simulated": True,
                 }
 
     # 3. Live tool execution
     tool = default_tool_registry.get_tool(tool_name)
     if not tool:
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
+        err_msg = f"Tool '{tool_name}' not registered in tool registry."
+        if trace_id:
+            default_tracer.record_tool_span(
+                trace_id=trace_id,
+                tool_name=tool_name,
+                duration_ms=duration_ms,
+                success=False,
+                error_type="UNREGISTERED_TOOL",
+                error_message=err_msg,
+                fallback_used=True,
+            )
         return {
             "subtask_id": subtask_id,
             "tool_name": tool_name,
             "success": False,
-            "error": f"Tool '{tool_name}' not registered in tool registry.",
+            "error": err_msg,
         }
 
     try:
         observation = await tool.execute(**tool_input)
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
         extracted_news = [n.model_dump() for n in tool.extract_news(observation)]
         extracted_companies = [c.model_dump() for c in tool.extract_companies(observation)]
         extracted_research = [r.model_dump() for r in tool.extract_research(observation)]
         extracted_patents = [p.model_dump() for p in tool.extract_patents(observation)]
         extracted_sources = [s.model_dump() for s in tool.extract_sources(observation)]
+
+        if trace_id:
+            default_tracer.record_tool_span(
+                trace_id=trace_id,
+                tool_name=tool_name,
+                duration_ms=duration_ms,
+                success=True,
+                metadata={
+                    "extracted_companies": len(extracted_companies),
+                    "extracted_news": len(extracted_news),
+                    "extracted_research": len(extracted_research),
+                    "extracted_sources": len(extracted_sources),
+                },
+            )
 
         return {
             "subtask_id": subtask_id,
@@ -251,7 +357,19 @@ async def _execute_single_subtask(
             "extracted_sources": extracted_sources,
         }
     except Exception as e:
+        duration_ms = (time.perf_counter() - t_start) * 1000.0
         logger.warning(f"Error executing tool '{tool_name}': {e}")
+        diag = RootCauseDiagnosticEngine.diagnose_failure(tool_name, str(e))
+        if trace_id:
+            default_tracer.record_tool_span(
+                trace_id=trace_id,
+                tool_name=tool_name,
+                duration_ms=duration_ms,
+                success=False,
+                error_type=diag.error_category,
+                error_message=str(e),
+                fallback_used=True,
+            )
         return {
             "subtask_id": subtask_id,
             "tool_name": tool_name,
@@ -266,10 +384,12 @@ async def parallel_research_node(state: GraphInvestigationState) -> Dict[str, An
     Step 3: Execute independent research subtasks concurrently (parallel branches)
     and merge extracted findings into shared state.
     """
+    t0 = time.perf_counter()
     subtasks = state.get("subtasks", [])
     remaining_ids = set(state.get("remaining_tasks", []))
     adversarial_config = state.get("adversarial_config")
     unavailable_tools = list(state.get("unavailable_tools", []))
+    trace_id = state.get("trace_id")
     
     # Filter pending subtasks to execute
     tasks_to_run = [
@@ -310,7 +430,7 @@ async def parallel_research_node(state: GraphInvestigationState) -> Dict[str, An
 
     # Execute all independent tasks concurrently using asyncio.gather
     results = await asyncio.gather(
-        *[_execute_single_subtask(st, adversarial_config, unavailable_tools) for st in tasks_to_run]
+        *[_execute_single_subtask(st, adversarial_config, unavailable_tools, trace_id) for st in tasks_to_run]
     )
 
     collected_companies = list(state.get("collected_companies", []))
@@ -352,21 +472,22 @@ async def parallel_research_node(state: GraphInvestigationState) -> Dict[str, An
 
         else:
             failed_count += 1
-            err_msg = res.get("error", "Unknown tool error")
             if sub_id in subtask_map:
                 subtask_map[sub_id]["status"] = "failed"
-                subtask_map[sub_id]["error"] = err_msg
-
+            err_msg = res.get("error", "Unknown execution error")
             tool_errors.append({
-                "tool_name": tool_name,
                 "subtask_id": sub_id,
+                "tool_name": tool_name,
                 "error": err_msg,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
 
-            # Track repeated action failure for deadlock prevention
-            repeated_action_count[tool_name] = repeated_action_count.get(tool_name, 0) + 1
-            if repeated_action_count[tool_name] >= 2 and tool_name not in unavailable_tools:
+            # Check repeated failure count for circuit breaker
+            curr_fail_count = repeated_action_count.get(tool_name, 0) + 1
+            repeated_action_count[tool_name] = curr_fail_count
+
+            # If tool failed multiple times, trip circuit breaker and add to unavailable
+            if curr_fail_count >= 2 and tool_name not in unavailable_tools:
                 unavailable_tools.append(tool_name)
                 logger.warning(f"Marking tool '{tool_name}' unavailable due to repeated failures.")
 
@@ -392,6 +513,19 @@ async def parallel_research_node(state: GraphInvestigationState) -> Dict[str, An
         })
         step_num += 1
 
+    # Record node span
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="parallel_research_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={
+                "tasks_executed": len(tasks_to_run),
+                "successful_count": successful_count,
+                "failed_count": failed_count,
+            },
+        )
 
     # Remaining tasks
     new_remaining = [st.get("id") for st in updated_subtasks if st.get("status") in ["pending", "running"]]
@@ -421,6 +555,7 @@ async def evidence_conflict_node(state: GraphInvestigationState) -> Dict[str, An
     Step 4: Evidence extraction, cross-source conflict detection,
     hypothesis verification, and uncertainty-aware confidence calculation.
     """
+    t0 = time.perf_counter()
     collected_companies = state.get("collected_companies", [])
     collected_news = state.get("collected_news", [])
     collected_research = state.get("collected_research", [])
@@ -429,6 +564,7 @@ async def evidence_conflict_node(state: GraphInvestigationState) -> Dict[str, An
     hypotheses_raw = state.get("hypotheses", [])
     tool_errors = state.get("tool_errors", [])
     detected_entities = state.get("detected_entities", [])
+    trace_id = state.get("trace_id")
 
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -494,6 +630,19 @@ async def evidence_conflict_node(state: GraphInvestigationState) -> Dict[str, An
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="evidence_conflict_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={
+                "evidence_count": len(evidence),
+                "conflicts_count": len(conflicts),
+                "confidence": confidence,
+            },
+        )
+
     return {
         "evidence": [ev.model_dump() for ev in evidence],
         "conflicting_evidence": [c.model_dump() for c in conflicts],
@@ -511,6 +660,7 @@ async def analyst_node(state: GraphInvestigationState) -> Dict[str, Any]:
     Consolidates research results, handles conflicting claims, and generates
     the comprehensive executive markdown report.
     """
+    t0 = time.perf_counter()
     investigation_goal = state.get("investigation_goal") or state.get("user_query", "")
     collected_companies = state.get("collected_companies", [])
     collected_news = state.get("collected_news", [])
@@ -522,6 +672,7 @@ async def analyst_node(state: GraphInvestigationState) -> Dict[str, Any]:
     hypotheses_raw = state.get("hypotheses", [])
     confidence = state.get("confidence", "high")
     chat_history = state.get("chat_history")
+    trace_id = state.get("trace_id")
 
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -604,6 +755,15 @@ async def analyst_node(state: GraphInvestigationState) -> Dict[str, Any]:
         })
         step_num += 1
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="analyst_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={"report_length": len(final_markdown)},
+        )
+
     return {
         "final_answer": final_markdown,
         "steps": steps,
@@ -617,6 +777,7 @@ async def self_eval_node(state: GraphInvestigationState) -> Dict[str, Any]:
     Step 6: Self-Evaluation node before final output.
     Validates completeness, entity coverage, confidence, and safety.
     """
+    t0 = time.perf_counter()
     user_query = state.get("user_query", "")
     investigation_goal = state.get("investigation_goal") or user_query
     detected_entities = state.get("detected_entities", [])
@@ -627,6 +788,7 @@ async def self_eval_node(state: GraphInvestigationState) -> Dict[str, Any]:
     tool_errors = state.get("tool_errors", [])
     iteration_count = state.get("iteration_count", 1)
     max_iterations = state.get("max_iterations", 5)
+    trace_id = state.get("trace_id")
 
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -656,6 +818,15 @@ async def self_eval_node(state: GraphInvestigationState) -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="self_eval_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success" if eval_result.passed else "failed",
+            metadata={"passed": eval_result.passed, "feedback": eval_result.feedback},
+        )
+
     return {
         "self_evaluation": eval_result.model_dump(),
         "evaluation_passed": eval_result.passed,
@@ -667,8 +838,10 @@ async def self_eval_node(state: GraphInvestigationState) -> Dict[str, Any]:
 async def replan_node(state: GraphInvestigationState) -> Dict[str, Any]:
     """
     Autonomous Replanning Node:
-    Constructs a new investigation plan when tools fail or evidence is insufficient.
+    Constructs a new investigation plan when tools fail or evidence is insufficient,
+    and records automated root-cause diagnostics.
     """
+    t0 = time.perf_counter()
     tool_errors = state.get("tool_errors", [])
     last_error = tool_errors[-1] if tool_errors else {}
     failed_tool = last_error.get("tool_name", "unknown_tool")
@@ -680,6 +853,8 @@ async def replan_node(state: GraphInvestigationState) -> Dict[str, Any]:
     remaining_tasks = state.get("remaining_tasks", [])
     investigation_goal = state.get("investigation_goal") or state.get("user_query", "")
     detected_entities = state.get("detected_entities", [])
+    trace_id = state.get("trace_id")
+    diagnoses = list(state.get("diagnoses", []))
 
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
@@ -694,6 +869,19 @@ async def replan_node(state: GraphInvestigationState) -> Dict[str, Any]:
         investigation_goal=investigation_goal,
         detected_entities=detected_entities,
     )
+
+    # Perform automated Root Cause Diagnosis
+    if trace_id and failed_tool:
+        diag = default_tracer.record_diagnostic_event(
+            trace_id=trace_id,
+            tool_name=failed_tool,
+            error_message=error_msg,
+            attempt=state.get("iteration_count", 0) + 1,
+            consecutive_failures=len(tool_errors),
+            details={"subtask_id": failed_subtask_id},
+        )
+        if diag:
+            diagnoses.append(diag.model_dump())
 
     steps.append({
         "step": step_num,
@@ -721,9 +909,19 @@ async def replan_node(state: GraphInvestigationState) -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="replan_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+            metadata={"replan_summary": replan_summary, "diagnoses_count": len(diagnoses)},
+        )
+
     return {
         "subtasks": updated_subtasks,
         "remaining_tasks": new_remaining,
+        "diagnoses": diagnoses,
         "steps": steps,
         "status": "researching",
         "iteration_count": state.get("iteration_count", 0) + 1,
@@ -735,11 +933,13 @@ async def finalize_node(state: GraphInvestigationState) -> Dict[str, Any]:
     """
     Final step: Update session memory with entities/findings and consolidate response.
     """
+    t0 = time.perf_counter()
     session_id = state.get("session_id", "default_session")
     user_query = state.get("user_query", "")
     final_answer = state.get("final_answer") or "Investigation completed with synthesized intelligence."
     tools_used = state.get("tools_used", [])
     collected_companies = state.get("collected_companies", [])
+    trace_id = state.get("trace_id")
     steps = list(state.get("steps", []))
     step_num = len(steps) + 1
 
@@ -763,6 +963,14 @@ async def finalize_node(state: GraphInvestigationState) -> Dict[str, Any]:
         "status": "completed",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
+
+    if trace_id:
+        default_tracer.record_node_span(
+            trace_id=trace_id,
+            node_name="finalize_node",
+            duration_ms=(time.perf_counter() - t0) * 1000.0,
+            status="success",
+        )
 
     return {
         "steps": steps,

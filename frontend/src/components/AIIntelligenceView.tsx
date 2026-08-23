@@ -222,6 +222,10 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
           tools_used: Array.isArray(rawData.tools_used) ? rawData.tools_used : [],
           iterations: typeof rawData.iterations === "number" ? rawData.iterations : 1,
           session_id: rawData.session_id || sessionId,
+          trace_id: rawData.trace_id,
+          trace_summary: rawData.trace_summary,
+          diagnoses: Array.isArray(rawData.diagnoses) ? rawData.diagnoses : [],
+          confidence: rawData.confidence,
           companies: Array.isArray(rawData.companies) ? rawData.companies : [],
           news: Array.isArray(rawData.news)
             ? rawData.news
@@ -292,16 +296,6 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
         </div>
 
         <div className="chat-top-actions">
-          <button
-            type="button"
-            className={`btn-dev-test-mode ${devModeActive ? "active" : ""}`}
-            onClick={() => setDevModeOpen(!devModeOpen)}
-            title="Toggle Developer / Adversarial Test Mode panel"
-          >
-            <span>🛠️ Dev Test Mode</span>
-            {devModeActive && <span className="dev-active-badge">ACTIVE</span>}
-          </button>
-
           {messages.length > 0 && (
             <button
               type="button"
@@ -317,105 +311,6 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
           )}
         </div>
       </div>
-
-      {/* Developer / Adversarial Test Mode Panel */}
-      {devModeOpen && (
-        <div className="dev-mode-panel">
-          <div className="dev-mode-header">
-            <div className="dev-mode-title-wrap">
-              <span className="dev-mode-tag">DEVELOPER TEST MODE</span>
-              <h4 className="dev-mode-heading">Adversarial Failure & Conflict Simulation</h4>
-            </div>
-            <div className="dev-mode-master-toggle">
-              <label className="switch-label">
-                <input
-                  type="checkbox"
-                  checked={devModeActive}
-                  onChange={(e) => setDevModeActive(e.target.checked)}
-                />
-                <span className="switch-slider" />
-                <span className="switch-text">{devModeActive ? "Simulation Enabled" : "Disabled (Production Mode)"}</span>
-              </label>
-            </div>
-          </div>
-
-          <p className="dev-mode-desc">
-            Select a controlled fault condition to test LangGraph’s autonomous recovery loops, tool fallback routing, hypothesis verification, and circuit breaker logic without impacting real production APIs.
-          </p>
-
-          <div className={`dev-scenario-grid ${!devModeActive ? "disabled" : ""}`}>
-            {/* Scenario 1: Tavily Failure */}
-            <div
-              className={`dev-scenario-card ${selectedScenario === "tavily_fail" ? "selected" : ""}`}
-              onClick={() => devModeActive && setSelectedScenario("tavily_fail")}
-            >
-              <div className="scenario-card-header">
-                <span className="scenario-icon">⚡</span>
-                <span className="scenario-name">1. Tavily Search Failure</span>
-              </div>
-              <p className="scenario-detail">
-                Simulates 503 outage on primary web search. Tests: Failure detection $\rightarrow$ Autonomous Replanning $\rightarrow$ GNews & Company Intelligence fallback.
-              </p>
-              <div className="scenario-config-tag">force_tavily_fail: true</div>
-            </div>
-
-            {/* Scenario 2: GNews Failure */}
-            <div
-              className={`dev-scenario-card ${selectedScenario === "gnews_fail" ? "selected" : ""}`}
-              onClick={() => devModeActive && setSelectedScenario("gnews_fail")}
-            >
-              <div className="scenario-card-header">
-                <span className="scenario-icon">📰</span>
-                <span className="scenario-name">2. GNews API Failure</span>
-              </div>
-              <p className="scenario-detail">
-                Simulates 429 rate limit on news feeds. Tests: Tool fallback to live web search without crashing the multi-agent investigation.
-              </p>
-              <div className="scenario-config-tag">force_gnews_fail: true</div>
-            </div>
-
-            {/* Scenario 3: Repeated Tool Failure */}
-            <div
-              className={`dev-scenario-card ${selectedScenario === "repeated_fail" ? "selected" : ""}`}
-              onClick={() => devModeActive && setSelectedScenario("repeated_fail")}
-            >
-              <div className="scenario-card-header">
-                <span className="scenario-icon">🔁</span>
-                <span className="scenario-name">3. Repeated Failure & Deadlock</span>
-              </div>
-              <p className="scenario-detail">
-                Simulates persistent tool failures. Tests: State action counters, Circuit Breaker trigger, and safe termination within resource limits.
-              </p>
-              <div className="scenario-config-tag">force_repeated_tool_fail: "search_news"</div>
-            </div>
-
-            {/* Scenario 4: Conflicting Evidence */}
-            <div
-              className={`dev-scenario-card ${selectedScenario === "conflict_evidence" ? "selected" : ""}`}
-              onClick={() => devModeActive && setSelectedScenario("conflict_evidence")}
-            >
-              <div className="scenario-card-header">
-                <span className="scenario-icon">⚖️</span>
-                <span className="scenario-name">4. Conflicting Evidence Injection</span>
-              </div>
-              <p className="scenario-detail">
-                Injects contradictory claims (Source A vs Source B). Tests: Source recency & reliability weighting, uncertainty rating, and transparent disclosure.
-              </p>
-              <div className="scenario-config-tag">inject_conflicting_evidence: &#123;...&#125;</div>
-            </div>
-          </div>
-
-          {devModeActive && (
-            <div className="dev-active-status-bar">
-              <span className="status-indicator-dot" />
-              <span>
-                Active Simulation: <strong>{selectedScenario.toUpperCase()}</strong>. Next query will dispatch with LangGraph adversarial payload.
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
 
       {/* Main Conversation Stream */}
       <div className="chat-stream-container">
@@ -514,29 +409,85 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
                               </button>
 
                               {expandedActivities[msg.id] !== false && (
-                                <ul className="chat-activity-steps">
-                                  {msg.response.steps.map((step, sIdx) => {
-                                    let icon = "✓";
-                                    let itemClass = "chat-step-item completed";
-                                    const text = step.summary;
-                                    if (step.status === "failed" || step.action === "error" || text.includes("⚠") || text.toLowerCase().includes("failed")) {
-                                      icon = "⚠";
-                                      itemClass = "chat-step-item failed";
-                                    } else if (text.includes("↻") || text.toLowerCase().includes("replan")) {
-                                      icon = "↻";
-                                      itemClass = "chat-step-item replan";
-                                    } else if (step.status === "running") {
-                                      icon = "•";
-                                      itemClass = "chat-step-item running";
-                                    }
-                                    return (
-                                      <li key={sIdx} className={itemClass}>
-                                        <span className="step-bullet">{icon}</span>
-                                        <span className="step-text">{text}</span>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                  {/* Trace Metadata Badge */}
+                                  {msg.response.trace_id && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        fontSize: "0.75rem",
+                                        padding: "0.35rem 0.65rem",
+                                        borderRadius: "var(--radius-sm, 6px)",
+                                        backgroundColor: "rgba(255, 255, 255, 0.03)",
+                                        border: "1px solid var(--border)",
+                                        color: "var(--text-muted)",
+                                      }}
+                                    >
+                                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                        <span style={{ color: "var(--primary)" }}>🛰️ Trace:</span>
+                                        <code style={{ fontSize: "0.72rem", color: "var(--text-main)" }}>
+                                          {msg.response.trace_id}
+                                        </code>
+                                      </div>
+                                      {msg.response.trace_summary && (
+                                        <span>
+                                          ⏱️ {msg.response.trace_summary.total_latency_ms} ms • 🛠️ {msg.response.trace_summary.tool_calls_count} tool calls
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Root Cause Diagnoses Alert */}
+                                  {msg.response.diagnoses && msg.response.diagnoses.length > 0 && (
+                                    <div
+                                      style={{
+                                        fontSize: "0.78rem",
+                                        padding: "0.45rem 0.75rem",
+                                        borderRadius: "var(--radius-sm, 6px)",
+                                        backgroundColor: "rgba(234, 179, 8, 0.08)",
+                                        border: "1px solid rgba(234, 179, 8, 0.3)",
+                                        color: "#fef08a",
+                                      }}
+                                    >
+                                      {msg.response.diagnoses.map((diag, dIdx) => (
+                                        <div key={dIdx} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                          <span>🔍 <strong>RCA Diagnosis:</strong></span>
+                                          <span>{diag.diagnosis}</span>
+                                          <span>•</span>
+                                          <span style={{ color: "var(--text-muted)" }}>
+                                            Action: <code>{diag.recovery_action}</code>
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <ul className="chat-activity-steps">
+                                    {msg.response.steps.map((step, sIdx) => {
+                                      let icon = "✓";
+                                      let itemClass = "chat-step-item completed";
+                                      const text = step.summary;
+                                      if (step.status === "failed" || step.action === "error" || text.includes("⚠") || text.toLowerCase().includes("failed")) {
+                                        icon = "⚠";
+                                        itemClass = "chat-step-item failed";
+                                      } else if (text.includes("↻") || text.toLowerCase().includes("replan")) {
+                                        icon = "↻";
+                                        itemClass = "chat-step-item replan";
+                                      } else if (step.status === "running") {
+                                        icon = "•";
+                                        itemClass = "chat-step-item running";
+                                      }
+                                      return (
+                                        <li key={sIdx} className={itemClass}>
+                                          <span className="step-bullet">{icon}</span>
+                                          <span className="step-text">{text}</span>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
                               )}
                             </div>
                           )}
