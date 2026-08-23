@@ -70,9 +70,9 @@ export default function ResearchPapersView({
         } else {
           setSourceInfo("Supabase & Curated Cache");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error loading research papers:", err);
-        const detail = err?.message ? ` (${err.message})` : "";
+        const detail = err instanceof Error ? ` (${err.message})` : "";
         setErrorMsg(`Could not connect to the research paper service at ${backendUrl}${detail}. Please ensure the backend is running.`);
       } finally {
         setIsLoading(false);
@@ -83,7 +83,16 @@ export default function ResearchPapersView({
 
   // Initial load
   useEffect(() => {
-    fetchPapers();
+    let isSubscribed = true;
+    const load = async () => {
+      if (isSubscribed) {
+        await fetchPapers();
+      }
+    };
+    load();
+    return () => {
+      isSubscribed = false;
+    };
   }, [fetchPapers]);
 
   // Handle search submission

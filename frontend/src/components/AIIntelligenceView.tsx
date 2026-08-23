@@ -68,10 +68,9 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
   const [activeSourceModal, setActiveSourceModal] = useState<ActiveSourceDetail | null>(null);
   const [sessionId, setSessionId] = useState<string>(() => `session-${Math.random().toString(36).substring(2, 11)}`);
   
-  // Developer / Adversarial Test Mode State (Hackathon Live Demonstration)
-  const [devModeOpen, setDevModeOpen] = useState(false);
-  const [devModeActive, setDevModeActive] = useState(false);
-  const [selectedScenario, setSelectedScenario] = useState<"tavily_fail" | "gnews_fail" | "repeated_fail" | "conflict_evidence">("tavily_fail");
+  // Developer / Adversarial Test Mode State
+  const devModeActive = false;
+  const selectedScenario = "tavily_fail";
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -159,7 +158,7 @@ export default function AIIntelligenceView({ onNavigateToCompany }: AIIntelligen
         }));
 
       // Construct adversarial configuration if developer test mode is enabled
-      let adversarialConfig: Record<string, any> | undefined = undefined;
+      let adversarialConfig: Record<string, unknown> | undefined = undefined;
       if (devModeActive) {
         if (selectedScenario === "tavily_fail") {
           adversarialConfig = { force_tavily_fail: true };

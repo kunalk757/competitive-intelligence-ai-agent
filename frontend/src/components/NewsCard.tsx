@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export interface NewsItemData {
   id?: string;
@@ -43,7 +43,7 @@ function formatNewsDate(dateStr?: string): string {
 
 export default function NewsCard({ item }: NewsCardProps) {
   const [isSaved, setIsSaved] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  const [failedImages, setFailedImages] = useState<{ [url: string]: boolean }>({});
 
   const displayTime = formatNewsDate(item.published_at || item.time);
   const displaySource = item.source || item.source_name || "Intelligence News";
@@ -51,12 +51,8 @@ export default function NewsCard({ item }: NewsCardProps) {
   const displayCategory = item.category || "Technology";
   const articleUrl = item.url || item.source_url;
   const rawImageUrl = item.image_url || item.image;
-  const hasValidImage = Boolean(rawImageUrl && rawImageUrl.trim() !== "");
-
-  // Reset imgError state when the article's image URL or title changes
-  useEffect(() => {
-    setImgError(false);
-  }, [rawImageUrl, item.title]);
+  const isImageFailed = Boolean(rawImageUrl && failedImages[rawImageUrl]);
+  const hasValidImage = Boolean(rawImageUrl && rawImageUrl.trim() !== "" && !isImageFailed);
 
   const handleCardClick = () => {
     if (articleUrl) {
@@ -87,12 +83,16 @@ export default function NewsCard({ item }: NewsCardProps) {
     >
       {/* Top News Article Image / Clean Fallback Container */}
       <div className="news-card-image-wrap">
-        {hasValidImage && !imgError ? (
+        {hasValidImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={rawImageUrl!}
             alt={item.title}
-            onError={() => setImgError(true)}
+            onError={() => {
+              if (rawImageUrl) {
+                setFailedImages((prev) => ({ ...prev, [rawImageUrl]: true }));
+              }
+            }}
             className="news-card-image"
             loading="lazy"
             referrerPolicy="no-referrer"
