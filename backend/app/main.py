@@ -51,6 +51,7 @@ async def root():
         "message": "Competitive Intelligence AI Agent API is running.",
         "docs_url": "/docs",
         "health_check": "/health",
+        "database_health": "/health/db",
     }
 
 

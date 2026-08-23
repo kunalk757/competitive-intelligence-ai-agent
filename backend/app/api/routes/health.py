@@ -14,6 +14,7 @@ async def health_check():
         "service": "competitive-intelligence-agent-backend",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": "0.1.0",
+        "database_check": "/health/db",
     }
 
 
