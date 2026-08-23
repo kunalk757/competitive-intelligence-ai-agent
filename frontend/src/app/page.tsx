@@ -46,8 +46,9 @@ export default function Home() {
   >("checking");
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
 
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = (
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+  ).replace(/\/+$/, "");
 
   const checkBackendHealth = useCallback(async () => {
     setIsCheckingHealth(true);

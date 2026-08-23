@@ -31,10 +31,11 @@ export default function ResearchPapersView({
   const [sourceInfo, setSourceInfo] = useState<string>("Semantic Scholar & Database");
   const [totalCount, setTotalCount] = useState<number>(0);
 
-  const backendUrl =
+  const backendUrl = (
     propBackendUrl ||
     process.env.NEXT_PUBLIC_BACKEND_URL ||
-    "http://localhost:8000";
+    "http://localhost:8000"
+  ).replace(/\/+$/, "");
 
   // Fetch papers from backend
   const fetchPapers = useCallback(

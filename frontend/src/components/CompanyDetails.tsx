@@ -19,8 +19,9 @@ export default function CompanyDetails({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
 
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = (
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+  ).replace(/\/+$/, "");
 
   const loadCompanyData = useCallback(
     async (forceRefresh = false) => {
