@@ -113,6 +113,12 @@ def test_api_endpoints():
     res_health = client.get("/health")
     assert res_health.status_code == 200
     assert res_health.json()["status"] == "healthy"
+
+    # 1b. Database Health check
+    res_db_health = client.get("/health/db")
+    assert res_db_health.status_code == 200
+    assert "storage_mode" in res_db_health.json()
+    assert "tables_supported" in res_db_health.json()
     
     # 2. Get news
     res_news = client.get("/api/news")

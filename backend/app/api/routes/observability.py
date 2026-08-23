@@ -17,7 +17,7 @@ from app.agent.orchestrator import default_orchestrator
 
 logger = logging.getLogger("observability_routes")
 
-router = APIRouter(prefix="/api/observability", tags=["Observability & Tracing"])
+router = APIRouter(prefix="/observability", tags=["Observability & Tracing"])
 
 
 class BenchmarkComparisonItem(BaseModel):
