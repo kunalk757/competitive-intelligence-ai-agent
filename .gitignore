@@ -27,8 +27,9 @@ dist/
 build/
 
 # Local cache data
-backend/data/
-data/
+/backend/data/
+/data/
+!frontend/src/data/
 
 # Logs & OS
 *.log
